@@ -20,6 +20,41 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
+## Base de datos (Desarrollo)
+
+### Migraciones
+
+```bash
+npm run db:migrate
+```
+
+### Seed (datos iniciales)
+
+```bash
+npm run db:seed
+```
+
+### Credenciales de prueba
+
+- Dueño: `dueño@onebusiness.test` / `test123456`
+- Socio: `socia@onebusiness.test` / `test123456`
+- Admin: `admin@onebusiness.test` / `test123456`
+- Externo: `externo@onebusiness.test` / `test123456`
+
+### Datos insertados por el seed
+
+- 10 negocios del holding (IDs fijos 1..10, incluyendo “Gastos Personales” id=10)
+- 4 roles (Dueño, Socio, Admin, Externo)
+- 13 centros de costo (para los negocios 1..4)
+- 4 usuarios de prueba y sus asignaciones usuario_negocio
+
+## Tests
+
+```bash
+npm test
+npm run test:coverage
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
