@@ -222,7 +222,7 @@ describe('RBAC integration (handlers)', () => {
       headers: { authorization: `Bearer ${token}` },
     });
 
-    const response = await movimientoDelete(request);
+    const response = await movimientoDelete(request, { params: { id: '1' } });
     expect(response.status).toBe(403);
   });
 

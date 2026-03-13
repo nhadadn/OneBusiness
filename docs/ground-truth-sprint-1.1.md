@@ -1,9 +1,9 @@
-# Ground Truth — Sprint 1.1 (Fase 1.1 → Transición a 1.2.x)
+# Ground Truth — Sprints 1.1 a 1.4 (Fase 1 → Base operable)
 
 **Proyecto:** ONEBUSINESS  
-**Sprint:** 1.1 (tareas 1.1.1 a 1.1.8)  
-**Última actualización:** 2026-03-12  
-**Propósito:** Single Source of Truth del estado real del Sprint 1.1, con evidencias verificables, decisiones técnicas y dependencias para iniciar la fase 1.2.x.
+**Sprints:** 1.1 a 1.4  
+**Última actualización:** 2026-03-13  
+**Propósito:** Single Source of Truth del estado real implementado para Sprints 1.1–1.4, con evidencias verificables, decisiones técnicas y gaps para planificar el siguiente sprint.
 
 ---
 
@@ -15,8 +15,8 @@
 - Stakeholders: resumen de capacidades alcanzadas y readiness para 1.2.x.
 
 **Alcance**
-- Incluye: configuración del proyecto, schema/migraciones, auth JWT, middleware de auth, multi-tenancy, seed inicial, página de login, suite de tests y coverage.
-- Excluye: features de Sprint 1.2.x (solo se documentan dependencias y readiness).
+- Incluye: configuración del proyecto, schema/migraciones, auth JWT, middleware de auth, multi-tenancy, seed inicial, UI de login, RBAC + usuarios, movimientos, cuentas bancarias y suite de tests/coverage.
+- Excluye: funcionalidades no detectadas en el repo aunque estén en prompts (ej. categorías Sprint 1.4) y temas fuera de sprints 1.1–1.4.
 
 ---
 
@@ -115,6 +115,37 @@
 
 ---
 
+## 2.2 Entregables adicionales verificados (Sprints 1.2–1.4)
+**Sprint 1.2 — Usuarios, roles y permisos (RBAC)**
+- Middleware de permisos por rol (Externo read-only).
+- CRUD de usuarios (API + UI) con restricciones por rol y tenant.
+- Asignación de negocios a usuarios y mecanismo de invalidación vía `tokenVersion`.
+- Evidencia:
+  - [permissions.ts](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/middleware/permissions.ts)
+  - [usuarios API](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/api/usuarios)
+  - [usuarios UI](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/%28dashboard%29/usuarios/page.tsx)
+  - Migración [0002_token_version.sql](file:///c:/Users/nadir/SergioMadrid/onebusiness/drizzle/migrations/0002_token_version.sql)
+
+**Sprint 1.3 — Registro y control de movimientos**
+- Schema y migración de movimientos, con workflow (pendiente/aprobado/rechazado) y soporte de traspasos.
+- API y UI: lista, filtros, alta, detalle y aprobación.
+- Evidencia:
+  - Migración [0004_add_movimientos.sql](file:///c:/Users/nadir/SergioMadrid/onebusiness/drizzle/migrations/0004_add_movimientos.sql)
+  - API [movimientos](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/api/movimientos)
+  - UI [movimientos](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/%28dashboard%29/movimientos/page.tsx)
+  - UI aprobación [movimientos/aprobacion](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/%28dashboard%29/movimientos/aprobacion/page.tsx)
+
+**Sprint 1.4 — Cuentas bancarias (parcial)**
+- Cuentas bancarias por negocio (schema + CRUD + UI).
+- Cálculo de saldo basado en movimientos aprobados y endpoint de saldo.
+- Gap: no se detecta módulo de categorías (schema/API/UI).
+- Evidencia:
+  - Migración [0003_add_cuentas_banco.sql](file:///c:/Users/nadir/SergioMadrid/onebusiness/drizzle/migrations/0003_add_cuentas_banco.sql)
+  - API [cuentas-banco](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/app/api/cuentas-banco)
+  - Servicio [cuenta_banco.service.ts](file:///c:/Users/nadir/SergioMadrid/onebusiness/src/services/cuenta_banco.service.ts)
+
+---
+
 ## 3) Criterios de aceptación (verificados)
 
 ### 3.1 Evidencias (comandos y resultados)
@@ -157,8 +188,8 @@
 |------|----------------------|----------|
 | Lint | 0 errores | ✅ 0 errores |
 | Build | 0 errores | ✅ 0 errores |
-| Tests | `npm test` sin errores | ✅ 52 tests OK |
-| Coverage global (archivos críticos) | ≥ 80% | ✅ ~98% statements / ~96% branches |
+| Tests | `npm test` sin errores | ✅ 99 tests OK |
+| Coverage global (archivos críticos) | ≥ 80% | ✅ 97.26% statements / 94% branches |
 | JWT utils | 100% funciones | ✅ 100% funciones |
 | tenant-middleware | ≥ 90% | ✅ 100% |
 | auth-middleware | ≥ 90% | ✅ 100% |
@@ -192,6 +223,11 @@
 - Vitest + cobertura v8.
 - Tests de integración a nivel handler (sin levantar servidor) para estabilidad y velocidad.
 
+### 5.6 RBAC, movimientos y cuentas bancarias
+- RBAC por rol con enforcement server-side (Externo read-only).
+- Movimientos con estados y flujo de aprobación/rechazo.
+- Cuentas bancarias modeladas por negocio (ver ADR-0009) y cálculo de saldo por movimientos aprobados.
+
 ---
 
 ## 6) Lecciones aprendidas (Sprint 1.1)
@@ -216,10 +252,15 @@
 - Middlewares de auth y tenant funcionando.
 - Suite de tests y coverage configurados.
 
-### 7.2 Requisitos de entrada para 1.2.x (must-have)
+### 7.2 Requisitos de entrada para el siguiente sprint (must-have)
 - `.env` válido para entorno del equipo (DB + JWT).
 - `npm run db:migrate` y `npm run db:seed` ejecutables sin intervención manual.
 - `npm test` y `npm run test:coverage` como gate de calidad.
+
+---
+
+## 10) Referencias de arquitectura (ADR)
+- ADR consolidado (Sprints 1.1–1.4): [adr.md](file:///c:/Users/nadir/SergioMadrid/onebusiness/docs/adr.md)
 
 ---
 
@@ -271,4 +312,3 @@ flowchart TD
 | Frontend |  |  |  |
 | QA |  |  |  |
 | Product Owner |  |  |  |
-

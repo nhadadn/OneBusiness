@@ -1,0 +1,100 @@
+'use client';
+
+import * as React from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { Categoria } from '@/types/categoria.types';
+
+function toUiTipo(tipo: Categoria['tipo']): 'ingreso' | 'egreso' {
+  const lower = String(tipo).toLowerCase();
+  return lower === 'ingreso' ? 'ingreso' : 'egreso';
+}
+
+function formatTipoLabel(tipo: 'ingreso' | 'egreso') {
+  return tipo === 'ingreso' ? 'Ingreso' : 'Egreso';
+}
+
+export type CategoriasTableProps = {
+  categorias: Categoria[];
+  onEditar: (categoria: Categoria) => void;
+  onDesactivar: (id: number) => void;
+  puedeEditar: boolean;
+  rol: string;
+};
+
+export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEditar, rol }: CategoriasTableProps) {
+  if (categorias.length === 0) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
+        No hay categorías registradas.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Tipo</TableHead>
+            <TableHead>Ámbito</TableHead>
+            <TableHead>Estado</TableHead>
+            {puedeEditar ? <TableHead className="w-[140px]">Acciones</TableHead> : null}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {categorias.map((categoria) => {
+            const tipo = toUiTipo(categoria.tipo);
+            const isGlobal = categoria.negocioId === null;
+            const isOwner = rol === 'Dueño';
+            const canEditThis = puedeEditar && (!isGlobal || isOwner);
+
+            return (
+              <TableRow key={categoria.id}>
+                <TableCell className="font-medium">{categoria.nombre}</TableCell>
+                <TableCell>
+                  <Badge variant={tipo === 'egreso' ? 'destructive' : 'default'}>{formatTipoLabel(tipo)}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={isGlobal ? 'outline' : 'secondary'}>{isGlobal ? 'Global' : 'Específica'}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={categoria.activa ? 'default' : 'secondary'}>{categoria.activa ? 'Activa' : 'Inactiva'}</Badge>
+                </TableCell>
+                {puedeEditar ? (
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onEditar(categoria)}
+                        disabled={!canEditThis}
+                        aria-label="Editar categoría"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => onDesactivar(categoria.id)}
+                        disabled={!canEditThis}
+                        aria-label="Desactivar categoría"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+

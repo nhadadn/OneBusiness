@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: onebusiness_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: onebusiness
+    ports:
+      - "5433:5432"
+    volumes:
+      - onebusiness_db:/var/lib/postgresql/data
+
+volumes:
+  onebusiness_db:

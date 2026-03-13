@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_categorias_nombre_negocio" ON "categorias" USING btree ("nombre","negocio_id");

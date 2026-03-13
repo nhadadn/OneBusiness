@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, boolean, timestamp, jsonb, integer, pgEnum, index, numeric, date, text, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, boolean, timestamp, jsonb, integer, pgEnum, index, uniqueIndex, numeric, date, text, foreignKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // ==========================================
@@ -18,6 +18,7 @@ export const negocios = pgTable('negocios', {
 
 export const negociosRelations = relations(negocios, ({ many }) => ({
   centrosCosto: many(centrosCosto),
+  categorias: many(categorias),
   usuarios: many(usuarioNegocio),
 }));
 
@@ -120,6 +121,24 @@ export const usuarioNegocioRelations = relations(usuarioNegocio, ({ one }) => ({
 export const tipoCuentaEnum = pgEnum('tipo_cuenta', ['EFECTIVO', 'BANCARIA', 'CAJA_CHICA']);
 export const tipoMovimientoEnum = pgEnum('tipo_movimiento', ['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']);
 export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO']);
+export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['INGRESO', 'EGRESO']);
+
+export const categorias = pgTable('categorias', {
+  id: serial('id').primaryKey(),
+  nombre: varchar('nombre', { length: 100 }).notNull(),
+  tipo: tipoCategoriaEnum('tipo').notNull(),
+  negocioId: integer('negocio_id').references(() => negocios.id, { onDelete: 'cascade' }),
+  activa: boolean('activa').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => {
+  return {
+    negocioIdIdx: index('idx_categorias_negocio_id').on(table.negocioId),
+    tipoIdx: index('idx_categorias_tipo').on(table.tipo),
+    activaIdx: index('idx_categorias_activa').on(table.activa),
+    nombreNegocioUq: uniqueIndex('uq_categorias_nombre_negocio').on(table.nombre, table.negocioId),
+  };
+});
 
 export const cuentasBanco = pgTable('cuentas_banco', {
   id: serial('id').primaryKey(),
@@ -214,5 +233,12 @@ export const movimientosRelations = relations(movimientos, ({ one }) => ({
     fields: [movimientos.traspasoRefId],
     references: [movimientos.id],
     relationName: 'traspaso_espejo',
+  }),
+}));
+
+export const categoriasRelations = relations(categorias, ({ one }) => ({
+  negocio: one(negocios, {
+    fields: [categorias.negocioId],
+    references: [negocios.id],
   }),
 }));

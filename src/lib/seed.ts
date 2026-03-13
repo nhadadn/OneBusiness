@@ -1,8 +1,8 @@
 import 'dotenv/config';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { centrosCosto, negocios, roles, rolesIniciales, usuarioNegocio, usuarios } from '@/lib/drizzle';
+import { categorias, centrosCosto, negocios, roles, rolesIniciales, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { hashPassword } from '@/services/auth.service';
 
 type RolNombre = 'Dueño' | 'Socio' | 'Admin' | 'Externo';
@@ -122,6 +122,59 @@ async function main() {
     await db.insert(negocios).values(negocio).onConflictDoNothing();
   }
   log('Negocios OK\n');
+
+  const negocioRows = await db.select({ id: negocios.id, nombre: negocios.nombre }).from(negocios);
+  const negocioIdByNombre = new Map<string, number>(negocioRows.map((row) => [row.nombre, row.id]));
+
+  log('Insertando categorías globales...');
+  const categoriasGlobales: Array<{ nombre: string; tipo: 'INGRESO' | 'EGRESO'; negocioId: null }> = [
+    { nombre: 'Ventas', tipo: 'INGRESO', negocioId: null },
+    { nombre: 'Servicios Prestados', tipo: 'INGRESO', negocioId: null },
+    { nombre: 'Otros Ingresos', tipo: 'INGRESO', negocioId: null },
+    { nombre: 'Nómina y Sueldos', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Renta', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Servicios Básicos', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Mantenimiento', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Impuestos y Contribuciones', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Compras e Inventario', tipo: 'EGRESO', negocioId: null },
+    { nombre: 'Otros Gastos', tipo: 'EGRESO', negocioId: null },
+  ];
+
+  const existingGlobal = await db
+    .select({ nombre: categorias.nombre, tipo: categorias.tipo })
+    .from(categorias)
+    .where(isNull(categorias.negocioId));
+  const existingGlobalKeys = new Set(existingGlobal.map((row) => `${row.tipo}::${row.nombre}`));
+  const missingGlobal = categoriasGlobales.filter((row) => !existingGlobalKeys.has(`${row.tipo}::${row.nombre}`));
+
+  if (missingGlobal.length > 0) {
+    await db.insert(categorias).values(missingGlobal).onConflictDoNothing();
+  }
+  log('Categorías globales OK\n');
+
+  log('Insertando categorías específicas por negocio...');
+  const categoriasEspecificasPorNegocio: Array<{ negocioNombre: string; rows: Array<{ nombre: string; tipo: 'INGRESO' | 'EGRESO' }> }> = [
+    { negocioNombre: 'Madsa', rows: [{ nombre: 'Renta de Equipos', tipo: 'INGRESO' }, { nombre: 'Gastos de Obra', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Purificadoras', rows: [{ nombre: 'Venta de Agua', tipo: 'INGRESO' }, { nombre: 'Insumos de Limpieza', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Taxis', rows: [{ nombre: 'Rentas', tipo: 'INGRESO' }, { nombre: 'Gasolina', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Food Park', rows: [{ nombre: 'Renta de Locales', tipo: 'INGRESO' }, { nombre: 'Eventos y Promoción', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Inmobiliaria', rows: [{ nombre: 'Rentas de Propiedad', tipo: 'INGRESO' }, { nombre: 'Reparaciones', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Gym', rows: [{ nombre: 'Membresías', tipo: 'INGRESO' }, { nombre: 'Equipo y Accesorios', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Ferretería', rows: [{ nombre: 'Ventas Mostrador', tipo: 'INGRESO' }, { nombre: 'Compra de Mercancía', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Cafetería', rows: [{ nombre: 'Bebidas y Alimentos', tipo: 'INGRESO' }, { nombre: 'Insumos', tipo: 'EGRESO' }] },
+    { negocioNombre: 'Lavandería', rows: [{ nombre: 'Servicios de Lavado', tipo: 'INGRESO' }, { nombre: 'Detergentes y Químicos', tipo: 'EGRESO' }] },
+  ];
+
+  const categoriasEspecificas = categoriasEspecificasPorNegocio.flatMap((entry) => {
+    const negocioId = negocioIdByNombre.get(entry.negocioNombre);
+    if (!negocioId) return [];
+    return entry.rows.map((row) => ({ ...row, negocioId }));
+  });
+
+  if (categoriasEspecificas.length > 0) {
+    await db.insert(categorias).values(categoriasEspecificas).onConflictDoNothing();
+  }
+  log('Categorías específicas OK\n');
 
   log('Insertando centros de costo...');
   for (const centro of centrosCostoData) {

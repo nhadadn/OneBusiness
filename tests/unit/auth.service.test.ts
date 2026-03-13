@@ -72,7 +72,7 @@ vi.mock('@/lib/db', () => {
                   state.userNegociosByUserId.size === 1
                     ? state.userNegociosByUserId.values().next().value
                     : [];
-                return negocios.map((negocioId) => ({ negocioId }));
+                return (negocios ?? []).map((negocioId) => ({ negocioId }));
               },
             };
           }
@@ -106,8 +106,10 @@ vi.mock('@/lib/jwt', () => {
   };
 });
 
-import { __mockDb } from '@/lib/db';
+import * as dbModule from '@/lib/db';
 import { comparePassword, hashPassword, login, refreshAccessToken } from '@/services/auth.service';
+
+const __mockDb = (dbModule as any).__mockDb;
 
 describe('Auth service', () => {
   it('hashPassword y comparePassword funcionan', async () => {
