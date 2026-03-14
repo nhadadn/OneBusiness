@@ -2,10 +2,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Eye, Trash2, X } from 'lucide-react';
+import { Check, ClipboardList, Eye, Loader2, Trash2, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { EstadoBadge } from '@/components/movimientos/estado-badge';
 import { RechazoDialog } from '@/components/movimientos/rechazo-dialog';
+import { EmptyState } from '@/components/shared/empty-state';
+import { ErrorState } from '@/components/shared/error-state';
+import { MovimientosLoader } from '@/components/shared/page-loader';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useDeleteMovimiento, useMovimientos, useRechazarMovimiento, type MovimientosFilters } from '@/hooks/use-movimientos';
 import type { MovimientoListItem } from '@/hooks/use-movimientos';
-import type { TipoMovimiento } from '@/types/movimiento.types';
+import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
 export type MovimientosTableProps = {
   filters: MovimientosFilters;
@@ -82,18 +86,37 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
   const aprobar = useAprobarMovimiento();
   const rechazar = useRechazarMovimiento();
   const eliminar = useDeleteMovimiento();
+  const [action, setAction] = React.useState<{ id: number; type: 'aprobar' | 'rechazar' | 'eliminar' } | null>(null);
+  const [actionError, setActionError] = React.useState<Record<number, string | null>>({});
+  const [optimisticEstado, setOptimisticEstado] = React.useState<Record<number, EstadoMovimiento>>({});
   const [rechazoOpen, setRechazoOpen] = React.useState(false);
   const [rechazoTarget, setRechazoTarget] = React.useState<MovimientoListItem | null>(null);
   const [eliminarOpen, setEliminarOpen] = React.useState(false);
   const [eliminarTarget, setEliminarTarget] = React.useState<MovimientoListItem | null>(null);
 
   const data = query.data;
-  const items = data?.items ?? [];
+  const items = React.useMemo(() => {
+    const base = data?.items ?? [];
+    return base
+      .map((mov) => {
+        const nextEstado = optimisticEstado[mov.id];
+        return nextEstado ? { ...mov, estado: nextEstado } : mov;
+      })
+      .filter((mov) => (filters.estado ? mov.estado === filters.estado : true));
+  }, [data?.items, filters.estado, optimisticEstado]);
   const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const canPrev = page > 1;
   const canNext = page < totalPages;
+
+  React.useEffect(() => {
+    const handler = () => {
+      query.refetch();
+    };
+    window.addEventListener('onebusiness:movimientos-refresh', handler as EventListener);
+    return () => window.removeEventListener('onebusiness:movimientos-refresh', handler as EventListener);
+  }, [query]);
 
   const handleApprove = async (mov: MovimientoListItem) => {
     if (onAprobar) {
@@ -101,7 +124,22 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
       return;
     }
     if (typeof negocioId !== 'number') return;
-    await aprobar.mutateAsync({ id: mov.id, negocioId });
+    setAction({ id: mov.id, type: 'aprobar' });
+    setActionError((prev) => ({ ...prev, [mov.id]: null }));
+    try {
+      await aprobar.mutateAsync({ id: mov.id, negocioId });
+      setOptimisticEstado((prev) => ({ ...prev, [mov.id]: 'APROBADO' }));
+      window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+      toast.success('Movimiento aprobado', { duration: 2500 });
+    } catch (e) {
+      setActionError((prev) => ({
+        ...prev,
+        [mov.id]: e instanceof Error ? e.message : 'No se pudo aprobar el movimiento',
+      }));
+      toast.error(e instanceof Error ? e.message : 'No se pudo aprobar el movimiento', { duration: 5000 });
+    } finally {
+      setAction((prev) => (prev?.id === mov.id ? null : prev));
+    }
   };
 
   const handleReject = async (mov: MovimientoListItem) => {
@@ -121,25 +159,33 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
 
   if (typeof negocioId !== 'number') {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        Selecciona un negocio para ver movimientos.
-      </div>
+      <EmptyState
+        icon={ClipboardList}
+        title="Sin negocio seleccionado"
+        description="Selecciona un negocio para ver movimientos."
+      />
     );
   }
 
   if (query.isLoading) {
-    return <div className="text-sm text-slate-600">Cargando...</div>;
+    return <MovimientosLoader />;
   }
 
   if (query.error instanceof Error) {
-    return <div className="text-sm text-red-600">{query.error.message}</div>;
+    return <ErrorState message={query.error.message} onRetry={() => query.refetch()} />;
   }
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        No hay movimientos para mostrar.
-      </div>
+      <EmptyState
+        icon={ClipboardList}
+        title="Sin movimientos"
+        description="Crea el primer movimiento para empezar a registrar las finanzas de este negocio."
+        action={{
+          label: 'Nuevo movimiento',
+          onClick: () => window.dispatchEvent(new CustomEvent('onebusiness:new-movimiento-open')),
+        }}
+      />
     );
   }
 
@@ -163,6 +209,10 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
             {items.map((mov) => {
               const monto = formatCurrencyMXN(parseMoney(mov.monto));
               const canApproveReject = canManage && mov.estado === 'PENDIENTE';
+              const isApproving = action?.type === 'aprobar' && action.id === mov.id;
+              const isRejecting = action?.type === 'rechazar' && action.id === mov.id;
+              const isDeleting = action?.type === 'eliminar' && action.id === mov.id;
+              const error = actionError[mov.id];
               return (
                 <TableRow key={mov.id}>
                   <TableCell className="whitespace-nowrap">{formatDateDMY(mov.fecha)}</TableCell>
@@ -177,12 +227,26 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {canApproveReject && (
-                        <Button size="sm" variant="ghost" onClick={() => handleApprove(mov)} disabled={aprobar.isPending}>
-                          <Check className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleApprove(mov)}
+                          disabled={isApproving || isRejecting || isDeleting}
+                          aria-label="Aprobar"
+                          className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                        >
+                          {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         </Button>
                       )}
                       {canApproveReject && (
-                        <Button size="sm" variant="ghost" onClick={() => handleReject(mov)} disabled={rechazar.isPending}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleReject(mov)}
+                          disabled={isApproving || isRejecting || isDeleting}
+                          aria-label="Rechazar"
+                          className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
                           <X className="h-4 w-4" />
                         </Button>
                       )}
@@ -190,11 +254,19 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canManage && (
-                        <Button size="sm" variant="ghost" onClick={() => handleDelete(mov)} disabled={eliminar.isPending}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(mov)}
+                          disabled={isApproving || isRejecting || isDeleting}
+                          aria-label="Eliminar"
+                          className="text-muted-foreground hover:bg-accent hover:text-foreground"
+                        >
+                          {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       )}
                     </div>
+                    {error ? <div className="mt-2 text-xs text-red-600">{error}</div> : null}
                   </TableCell>
                 </TableRow>
               );
@@ -221,7 +293,24 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
         onConfirm={async (motivoRechazo) => {
           if (!rechazoTarget) return;
           if (typeof negocioId !== 'number') return;
-          await rechazar.mutateAsync({ id: rechazoTarget.id, motivoRechazo, negocioId });
+          const id = rechazoTarget.id;
+          setAction({ id, type: 'rechazar' });
+          setActionError((prev) => ({ ...prev, [id]: null }));
+          try {
+            await rechazar.mutateAsync({ id, motivoRechazo, negocioId });
+            setRechazoOpen(false);
+            setOptimisticEstado((prev) => ({ ...prev, [id]: 'RECHAZADO' }));
+            window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+            toast.success('Movimiento rechazado', { duration: 2500 });
+          } catch (e) {
+            setActionError((prev) => ({
+              ...prev,
+              [id]: e instanceof Error ? e.message : 'No se pudo rechazar el movimiento',
+            }));
+            toast.error(e instanceof Error ? e.message : 'No se pudo rechazar el movimiento', { duration: 5000 });
+          } finally {
+            setAction((prev) => (prev?.id === id ? null : prev));
+          }
         }}
       />
 
@@ -244,8 +333,23 @@ export function MovimientosTable({ filters, onAprobar, onRechazar }: Movimientos
               onClick={async () => {
                 if (!eliminarTarget) return;
                 if (typeof negocioId !== 'number') return;
-                await eliminar.mutateAsync({ id: eliminarTarget.id, negocioId });
-                setEliminarOpen(false);
+                const id = eliminarTarget.id;
+                setAction({ id, type: 'eliminar' });
+                setActionError((prev) => ({ ...prev, [id]: null }));
+                try {
+                  await eliminar.mutateAsync({ id, negocioId });
+                  setEliminarOpen(false);
+                  window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+                  toast.success('Movimiento eliminado', { duration: 2500 });
+                } catch (e) {
+                  setActionError((prev) => ({
+                    ...prev,
+                    [id]: e instanceof Error ? e.message : 'No se pudo eliminar el movimiento',
+                  }));
+                  toast.error(e instanceof Error ? e.message : 'No se pudo eliminar el movimiento', { duration: 5000 });
+                } finally {
+                  setAction((prev) => (prev?.id === id ? null : prev));
+                }
               }}
             >
               Eliminar

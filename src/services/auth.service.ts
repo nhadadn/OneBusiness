@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 
@@ -6,6 +7,10 @@ import { roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@/lib/jwt';
 
 const SALT_ROUNDS = process.env.NODE_ENV === 'test' ? 4 : 12;
+
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
@@ -56,7 +61,10 @@ export async function login(email: string, password: string) {
 
   const refreshToken = await generateRefreshToken(user.id);
 
-  await db.update(usuarios).set({ fechaUltimoAcceso: new Date() }).where(eq(usuarios.id, user.id));
+  await db
+    .update(usuarios)
+    .set({ fechaUltimoAcceso: new Date(), refreshTokenHash: hashToken(refreshToken) })
+    .where(eq(usuarios.id, user.id));
 
   return {
     success: true as const,
@@ -85,6 +93,16 @@ export async function refreshAccessToken(refreshToken: string) {
     return { success: false as const, error: 'Usuario no encontrado o inactivo' };
   }
 
+  if (!user.refreshTokenHash) {
+    return { success: false as const, error: 'Sesión inválida. Inicia sesión de nuevo.' };
+  }
+
+  const tokenHashRecibido = hashToken(refreshToken);
+  if (user.refreshTokenHash !== tokenHashRecibido) {
+    await db.update(usuarios).set({ refreshTokenHash: null }).where(eq(usuarios.id, user.id));
+    return { success: false as const, error: 'Token inválido. Inicia sesión de nuevo.' };
+  }
+
   const rolRows = await db.select().from(roles).where(eq(roles.id, user.rolId)).limit(1);
   const rol = rolRows[0];
 
@@ -107,5 +125,25 @@ export async function refreshAccessToken(refreshToken: string) {
     tokenVersion: user.tokenVersion,
   });
 
-  return { success: true as const, accessToken };
+  const newRefreshToken = await generateRefreshToken(user.id);
+
+  await db.update(usuarios).set({ refreshTokenHash: hashToken(newRefreshToken) }).where(eq(usuarios.id, user.id));
+
+  return {
+    success: true as const,
+    accessToken,
+    refreshToken: newRefreshToken,
+    user: {
+      id: user.id,
+      nombre: user.nombreCompleto,
+      email: user.email,
+      rol: rol.nombre,
+      negocios: negociosIds,
+    },
+  };
+}
+
+export async function logout(userId: number) {
+  await db.update(usuarios).set({ refreshTokenHash: null }).where(eq(usuarios.id, userId));
+  return { success: true as const };
 }

@@ -55,7 +55,7 @@ function getNombreUsuario(value: { nombre?: string | null; email?: string | null
 function getLine(label: string, value: React.ReactNode) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <div className="text-sm text-slate-500">{label}</div>
+      <div className="text-sm text-slate-600">{label}</div>
       <div className="text-right text-sm text-slate-900">{value}</div>
     </div>
   );
@@ -145,4 +145,3 @@ export function MovimientoDetalleSheet({
     </Sheet>
   );
 }
-

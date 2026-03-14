@@ -23,7 +23,7 @@ export function DashboardCharts({ rol, selectedNegocio, negocioId }: DashboardCh
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed border-slate-200 text-sm text-slate-500">
+        <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed border-slate-200 text-sm text-slate-600">
           Gráficos pendientes de integrar con API de métricas
         </div>
       </CardContent>

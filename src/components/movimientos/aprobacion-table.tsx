@@ -1,9 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, CircleCheck, X } from 'lucide-react';
 
 import { EstadoBadge } from '@/components/movimientos/estado-badge';
+import { EmptyState } from '@/components/shared/empty-state';
+import { ErrorState } from '@/components/shared/error-state';
+import { MovimientosLoader } from '@/components/shared/page-loader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -77,26 +80,20 @@ export function AprobacionTable({
 
   if (typeof negocioId !== 'number') {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        Selecciona un negocio para ver pendientes.
-      </div>
+      <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
     );
   }
 
   if (query.isLoading) {
-    return <div className="text-sm text-slate-600">Cargando...</div>;
+    return <MovimientosLoader />;
   }
 
   if (query.error instanceof Error) {
-    return <div className="text-sm text-red-600">{query.error.message}</div>;
+    return <ErrorState message={query.error.message} onRetry={() => query.refetch()} />;
   }
 
   if (items.length === 0) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-700">
-        ✅ Todo al día - No hay movimientos pendientes
-      </div>
-    );
+    return <EmptyState icon={CircleCheck} title="Todo al día" description="No hay movimientos pendientes de aprobación." />;
   }
 
   return (
@@ -179,4 +176,3 @@ export function AprobacionTable({
     </div>
   );
 }
-

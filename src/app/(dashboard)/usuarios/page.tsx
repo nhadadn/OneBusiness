@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 
 import { UsuarioDialog } from '@/components/usuarios/usuario-dialog';
 import { UsuariosTable } from '@/components/usuarios/usuarios-table';
+import { UsuariosLoader } from '@/components/shared/page-loader';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import type { UsuarioListItem } from '@/types/usuario.types';
@@ -25,7 +26,13 @@ export default function UsuariosPage() {
     return user.negocios.map((id) => ({ id, label: `Negocio ${id}` }));
   }, [user]);
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 py-6">
+        <UsuariosLoader />
+      </div>
+    );
+  }
   if (!user) return null;
 
   const canCreate = user.rol === 'Dueño' || user.rol === 'Admin';
@@ -45,7 +52,7 @@ export default function UsuariosPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Usuarios</h1>
-          <p className="text-slate-500">Gestiona los usuarios del sistema</p>
+          <p className="text-slate-600">Gestiona los usuarios del sistema</p>
         </div>
         {canCreate && (
           <Button onClick={handleCreate}>
@@ -55,7 +62,7 @@ export default function UsuariosPage() {
         )}
       </div>
 
-      <UsuariosTable negocioId={negocioId} onEdit={handleEdit} />
+      <UsuariosTable negocioId={negocioId} onEdit={handleEdit} onCreate={canCreate ? handleCreate : undefined} />
 
       <UsuarioDialog
         open={dialogOpen}

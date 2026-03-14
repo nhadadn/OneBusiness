@@ -4,6 +4,7 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { NegociosSelector, type NegocioOption } from '@/components/usuarios/negocios-selector';
 import { RolSelector } from '@/components/usuarios/rol-selector';
@@ -60,44 +61,51 @@ export function UsuarioForm({ negocioId, usuario, negociosOptions, onSuccess }: 
   const isSubmitting = createUsuario.isPending || updateUsuario.isPending;
 
   const onSubmit = async (values: FormValues) => {
-    if (!isEditing) {
-      if (!values.password || values.password.length < 6) {
-        form.setError('password', { type: 'validate', message: 'Password mínimo 6 caracteres' });
-        return;
-      }
-      if (!values.negocios || values.negocios.length === 0) {
-        form.setError('negocios', { type: 'validate', message: 'Al menos un negocio requerido' });
+    try {
+      if (!isEditing) {
+        if (!values.password || values.password.length < 6) {
+          form.setError('password', { type: 'validate', message: 'Password mínimo 6 caracteres' });
+          return;
+        }
+        if (!values.negocios || values.negocios.length === 0) {
+          form.setError('negocios', { type: 'validate', message: 'Al menos un negocio requerido' });
+          return;
+        }
+
+        await createUsuario.mutateAsync({
+          nombreCompleto: values.nombreCompleto,
+          email: values.email,
+          password: values.password,
+          rolId: values.rolId,
+          negocios: values.negocios,
+        });
+        toast.success('Usuario creado', { duration: 2500 });
+        onSuccess();
         return;
       }
 
-      await createUsuario.mutateAsync({
+      const next = {
         nombreCompleto: values.nombreCompleto,
         email: values.email,
-        password: values.password,
         rolId: values.rolId,
-        negocios: values.negocios,
-      });
+      } as const;
+
+      if (values.password && values.password.length > 0) {
+        await updateUsuario.mutateAsync({
+          id: usuario!.id,
+          data: { ...next, password: values.password },
+        });
+        toast.success('Usuario actualizado', { duration: 2500 });
+        onSuccess();
+        return;
+      }
+
+      await updateUsuario.mutateAsync({ id: usuario!.id, data: next });
+      toast.success('Usuario actualizado', { duration: 2500 });
       onSuccess();
-      return;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo guardar el usuario', { duration: 5000 });
     }
-
-    const next = {
-      nombreCompleto: values.nombreCompleto,
-      email: values.email,
-      rolId: values.rolId,
-    } as const;
-
-    if (values.password && values.password.length > 0) {
-      await updateUsuario.mutateAsync({
-        id: usuario!.id,
-        data: { ...next, password: values.password },
-      });
-      onSuccess();
-      return;
-    }
-
-    await updateUsuario.mutateAsync({ id: usuario!.id, data: next });
-    onSuccess();
   };
 
   return (
@@ -185,7 +193,7 @@ export function UsuarioForm({ negocioId, usuario, negociosOptions, onSuccess }: 
         )}
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
+          {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}
         </Button>
       </form>
     </Form>

@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,8 +14,6 @@ import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
 import { useCreateMovimiento, type CreateMovimientoData } from '@/hooks/use-movimientos';
-
-const LAST_NEGOCIO_KEY = 'onebusiness_last_negocio';
 
 const schema = z
   .object({
@@ -44,22 +43,14 @@ type Values = z.infer<typeof schema>;
 
 export type MovimientoFormProps = {
   onSuccess: () => void;
+  negocioId?: number | null;
 };
 
 function todayISO() {
   return new Date().toISOString().split('T')[0]!;
 }
 
-function safeParseLastNegocio(): number | null {
-  if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(LAST_NEGOCIO_KEY);
-  if (!raw) return null;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) return null;
-  return parsed;
-}
-
-export function MovimientoForm({ onSuccess }: MovimientoFormProps) {
+export function MovimientoForm({ onSuccess, negocioId: preferredNegocioId }: MovimientoFormProps) {
   const { user, isLoading } = useAuth();
   const isOwner = user?.rol === 'Dueño';
 
@@ -78,10 +69,11 @@ export function MovimientoForm({ onSuccess }: MovimientoFormProps) {
 
   const defaultNegocioId = React.useMemo(() => {
     if (!user) return 0;
-    const last = safeParseLastNegocio();
-    if (last && negocioOptions.some((n) => n.id === last)) return last;
+    if (typeof preferredNegocioId === 'number' && negocioOptions.some((n) => n.id === preferredNegocioId)) {
+      return preferredNegocioId;
+    }
     return negocioOptions[0]?.id ?? user.negocios?.[0] ?? 0;
-  }, [negocioOptions, user]);
+  }, [negocioOptions, preferredNegocioId, user]);
 
   const createMovimiento = useCreateMovimiento();
 
@@ -146,9 +138,13 @@ export function MovimientoForm({ onSuccess }: MovimientoFormProps) {
       centroCostoId: values.centroCostoId,
     };
 
-    await createMovimiento.mutateAsync(payload);
-    localStorage.setItem(LAST_NEGOCIO_KEY, String(values.negocioId));
-    onSuccess();
+    try {
+      await createMovimiento.mutateAsync(payload);
+      toast.success('Movimiento creado exitosamente', { duration: 2500 });
+      onSuccess();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo crear el movimiento', { duration: 5000 });
+    }
   };
 
   if (isLoading) return null;
@@ -372,7 +368,7 @@ export function MovimientoForm({ onSuccess }: MovimientoFormProps) {
         {createMovimiento.error instanceof Error && <div className="text-sm text-red-600">{createMovimiento.error.message}</div>}
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          Guardar movimiento
+          {isSubmitting ? 'Guardando...' : 'Guardar movimiento'}
         </Button>
       </form>
     </Form>

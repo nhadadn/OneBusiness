@@ -1,35 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Building2 } from 'lucide-react';
 
 import { BusinessSelector } from '@/components/dashboard/business-selector';
 import { BusinessTable } from '@/components/dashboard/business-table';
 import { DashboardCharts } from '@/components/dashboard/charts';
 import { DashboardStats } from '@/components/dashboard/dashboard-stats';
 import { QuickActions } from '@/components/dashboard/quick-actions';
+import { EmptyState } from '@/components/shared/empty-state';
+import { DashboardLoader } from '@/components/shared/page-loader';
 import { useAuth } from '@/hooks/use-auth';
-
-const SELECTED_NEGOCIO_KEY = 'onebusiness_selected_negocio';
-
-function parseSelectedNegocio(raw: string | null): number | null {
-  if (!raw) return null;
-  if (raw === 'all') return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const [selectedNegocio, setSelectedNegocio] = useState<number | null>(null);
-
-  useEffect(() => {
-    const stored = parseSelectedNegocio(localStorage.getItem(SELECTED_NEGOCIO_KEY));
-    setSelectedNegocio(stored);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(SELECTED_NEGOCIO_KEY, selectedNegocio === null ? 'all' : String(selectedNegocio));
-  }, [selectedNegocio]);
 
   const isDueño = user?.rol === 'Dueño';
   const canSelectNegocio = isDueño || user?.rol === 'Admin' || user?.rol === 'Socio';
@@ -51,15 +36,32 @@ export default function DashboardPage() {
     return user.negocios[0] ?? undefined;
   }, [isDueño, canSelectNegocio, selectedNegocio, user]);
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 py-6">
+        <DashboardLoader />
+      </div>
+    );
+  }
   if (!user) return null;
+  if (!isDueño && (user.negocios?.length ?? 0) === 0) {
+    return (
+      <div className="container mx-auto space-y-6 py-6">
+        <EmptyState
+          icon={Building2}
+          title="Sin negocios asignados"
+          description="No tienes negocios asignados. Contacta a un administrador para que te asigne acceso."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto space-y-6 py-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-[#1e3a5f]">Dashboard</h1>
-          <p className="text-slate-500">
+          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
+          <p className="text-slate-600">
             Bienvenido, {user.nombre} ({user.rol})
           </p>
         </div>

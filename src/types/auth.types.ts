@@ -23,6 +23,21 @@ export interface RefreshRequest {
 export interface RefreshResponse {
   success: boolean;
   accessToken: string;
+  refreshToken?: string;
+  user?: {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: string;
+    negocios: number[];
+  };
+  usuario?: {
+    id: number;
+    nombre: string;
+    email: string;
+    rol: string;
+    negocios: number[];
+  };
 }
 
 export interface LogoutResponse {

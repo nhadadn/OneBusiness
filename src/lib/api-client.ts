@@ -4,6 +4,12 @@ export const TOKEN_KEY = 'onebusiness_token';
 export const REFRESH_TOKEN_KEY = 'onebusiness_refresh_token';
 export const USER_KEY = 'onebusiness_user';
 
+let inMemoryAccessToken: string | null = null;
+
+export function setApiClientAccessToken(token: string | null): void {
+  inMemoryAccessToken = token;
+}
+
 type ApiError = {
   success?: boolean;
   error?: string;
@@ -18,35 +24,30 @@ type ApiRequestInit = Omit<RequestInit, 'headers' | 'body'> & {
 };
 
 function getAccessToken(): string | null {
-  return typeof window === 'undefined' ? null : localStorage.getItem(TOKEN_KEY);
-}
-
-function getRefreshToken(): string | null {
-  return typeof window === 'undefined' ? null : localStorage.getItem(REFRESH_TOKEN_KEY);
+  return inMemoryAccessToken;
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return null;
+  try {
+    const cookieResponse = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
 
-  const response = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
-
-  if (!response.ok) {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    return null;
+    if (cookieResponse.ok) {
+      const data = (await cookieResponse.json()) as { accessToken?: string };
+      if (data.accessToken) {
+        inMemoryAccessToken = data.accessToken;
+        return data.accessToken;
+      }
+    }
+  } catch {
+    // ignore cookie refresh failures and fallback
   }
-
-  const data = (await response.json()) as { accessToken?: string };
-  if (!data.accessToken) return null;
-
-  localStorage.setItem(TOKEN_KEY, data.accessToken);
-  return data.accessToken;
+  inMemoryAccessToken = null;
+  return null;
 }
 
 export async function apiFetch<TResponse>(path: string, init: ApiRequestInit = {}): Promise<TResponse> {

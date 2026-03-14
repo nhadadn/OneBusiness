@@ -1,7 +1,8 @@
-﻿import { alias } from 'drizzle-orm/pg-core';
+import { alias } from 'drizzle-orm/pg-core';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
+import { auditLog } from '@/lib/audit-logger';
 import { cuentasBanco, movimientos, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { EmailService } from '@/services/email.service';
 import type {
@@ -160,7 +161,17 @@ export class MovimientoService {
 
   async crear(data: CreateMovimientoInput, creadoPor: number) {
     if (data.tipo === 'TRASPASO_SALIDA' && data.cuentaBancoDestinoId && data.negocioDestinoId) {
-      return this.crearTraspaso(data, creadoPor);
+      const created = await this.crearTraspaso(data, creadoPor);
+      void auditLog({
+        evento: 'MOVIMIENTO_CREADO',
+        exitoso: true,
+        userId: creadoPor,
+        negocioId: created.negocioId,
+        recurso: '/api/movimientos',
+        recursoId: created.id,
+        detalles: { monto: data.monto, tipo: data.tipo },
+      });
+      return created;
     }
 
     const [movimiento] = await db
@@ -184,6 +195,16 @@ export class MovimientoService {
     }
 
     await this.notificarNuevoMovimiento(movimiento);
+
+    void auditLog({
+      evento: 'MOVIMIENTO_CREADO',
+      exitoso: true,
+      userId: creadoPor,
+      negocioId: movimiento.negocioId,
+      recurso: '/api/movimientos',
+      recursoId: movimiento.id,
+      detalles: { monto: data.monto, tipo: data.tipo },
+    });
 
     return movimiento;
   }
@@ -287,7 +308,7 @@ export class MovimientoService {
       throw new Error('Solo se pueden aprobar movimientos pendientes');
     }
 
-    return db.transaction(async (tx) => {
+    const aprobado = await db.transaction(async (tx) => {
       const [aprobado] = await tx
         .update(movimientos)
         .set({
@@ -318,6 +339,18 @@ export class MovimientoService {
 
       return aprobado;
     });
+
+    void auditLog({
+      evento: 'MOVIMIENTO_APROBADO',
+      exitoso: true,
+      userId: input.aprobadoPor,
+      negocioId: movimiento.negocioId,
+      recurso: '/api/movimientos',
+      recursoId: input.movimientoId,
+      detalles: { monto: movimiento.monto, tipo: movimiento.tipo },
+    });
+
+    return aprobado;
   }
 
   async rechazar(input: RechazarMovimientoInput) {
@@ -327,7 +360,7 @@ export class MovimientoService {
       throw new Error('Solo se pueden rechazar movimientos pendientes');
     }
 
-    return db.transaction(async (tx) => {
+    const rechazado = await db.transaction(async (tx) => {
       const [rechazado] = await tx
         .update(movimientos)
         .set({
@@ -360,6 +393,18 @@ export class MovimientoService {
 
       return rechazado;
     });
+
+    void auditLog({
+      evento: 'MOVIMIENTO_RECHAZADO',
+      exitoso: true,
+      userId: input.aprobadoPor,
+      negocioId: movimiento.negocioId,
+      recurso: '/api/movimientos',
+      recursoId: input.movimientoId,
+      detalles: { monto: movimiento.monto, motivo: input.motivoRechazo },
+    });
+
+    return rechazado;
   }
 
   async reenviar(input: ReenviarMovimientoInput, usuarioId: number) {

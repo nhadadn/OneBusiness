@@ -113,7 +113,7 @@ export const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTML
     const { formDescriptionId } = useFormField();
 
     return (
-      <p ref={ref} id={formDescriptionId} className={cn('text-sm text-slate-500', className)} {...props} />
+      <p ref={ref} id={formDescriptionId} className={cn('text-sm text-slate-600', className)} {...props} />
     );
   }
 );

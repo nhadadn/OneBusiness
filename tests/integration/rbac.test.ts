@@ -106,6 +106,8 @@ import { generateAccessToken } from '@/lib/jwt';
 import { DELETE as movimientoDelete, GET as movimientoGetById, PATCH as movimientoPatch } from '@/app/api/movimientos/[id]/route';
 import { GET as movimientosGet, POST as movimientosPost } from '@/app/api/movimientos/route';
 import { GET as cuentasBancoGet } from '@/app/api/cuentas-banco/route';
+import { POST as categoriasPost } from '@/app/api/categorias/route';
+import { POST as usuariosPost } from '@/app/api/usuarios/route';
 
 describe('RBAC integration (handlers)', () => {
   beforeEach(() => {
@@ -163,7 +165,7 @@ describe('RBAC integration (handlers)', () => {
     expect(response.status, await response.text()).toBe(200);
   });
 
-  it('Externo POST permitido', async () => {
+  it('Externo POST bloqueado', async () => {
     const token = await generateAccessToken({
       userId: 4,
       email: 'externo@onebusiness.test',
@@ -186,10 +188,10 @@ describe('RBAC integration (handlers)', () => {
     });
 
     const response = await movimientosPost(request);
-    expect(response.status, await response.text()).toBe(201);
+    expect(response.status, await response.text()).toBe(403);
   });
 
-  it('Externo PATCH permitido si es creador y pendiente', async () => {
+  it('Externo PATCH bloqueado aunque sea creador', async () => {
     const token = await generateAccessToken({
       userId: 4,
       email: 'externo@onebusiness.test',
@@ -205,7 +207,7 @@ describe('RBAC integration (handlers)', () => {
     });
 
     const response = await movimientoPatch(request, { params: { id: '1' } });
-    expect(response.status, await response.text()).toBe(200);
+    expect(response.status, await response.text()).toBe(403);
   });
 
   it('Externo DELETE bloqueado', async () => {
@@ -324,5 +326,59 @@ describe('RBAC integration (handlers)', () => {
 
     const response = await movimientoGetById(request, { params: { id: '1' } });
     expect(response.status, await response.text()).toBe(200);
+  });
+});
+
+describe('RBAC — Rol Externo es read-only', () => {
+  const metodosEscritura = ['POST', 'PUT', 'PATCH', 'DELETE'] as const;
+  const endpoints = ['/api/movimientos', '/api/categorias', '/api/cuentas-banco', '/api/usuarios'] as const;
+
+  const handlers = {
+    '/api/movimientos': movimientosPost,
+    '/api/categorias': categoriasPost,
+    '/api/cuentas-banco': cuentasBancoGet,
+    '/api/usuarios': usuariosPost,
+  } as const;
+
+  metodosEscritura.forEach((metodo) => {
+    endpoints.forEach((endpoint) => {
+      it(`Externo NO puede ${metodo} ${endpoint} → 403`, async () => {
+        process.env.JWT_SECRET = '01234567890123456789012345678901';
+        const token = await generateAccessToken({
+          userId: 4,
+          email: 'externo@onebusiness.test',
+          rol: 'Externo',
+          negocios: [1],
+          tokenVersion: 0,
+        });
+
+        const request = new Request(`http://localhost${endpoint}?negocioId=1`, {
+          method: metodo,
+          headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-negocio-id': '1' },
+          body: JSON.stringify({ any: 'payload' }),
+        });
+
+        const response = await handlers[endpoint](request as never);
+        expect(response.status, await response.text()).toBe(403);
+      });
+    });
+  });
+
+  it('Externo SÍ puede GET /api/movimientos → 200', async () => {
+    process.env.JWT_SECRET = '01234567890123456789012345678901';
+    const token = await generateAccessToken({
+      userId: 4,
+      email: 'externo@onebusiness.test',
+      rol: 'Externo',
+      negocios: [1],
+      tokenVersion: 0,
+    });
+
+    const request = new Request('http://localhost/api/movimientos?negocioId=1', {
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    const response = await movimientosGet(request);
+    expect(response.status).toBe(200);
   });
 });

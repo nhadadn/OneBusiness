@@ -11,6 +11,7 @@ export class AuthorizationError extends Error {
 }
 
 export function hasPermission(rol: string, permission: Permission): boolean {
+  if (rol === 'Externo') return permission === 'read';
   const rolePermissions = ROLE_PERMISSIONS[rol as RoleName];
   if (!rolePermissions) return false;
   return rolePermissions.includes(permission);

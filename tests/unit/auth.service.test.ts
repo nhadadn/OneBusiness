@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createHash } from 'crypto';
 
 import { roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 
@@ -86,8 +87,18 @@ vi.mock('@/lib/db', () => {
       };
     }),
     update: vi.fn(() => ({
-      set: vi.fn(() => ({
-        where: vi.fn(async () => undefined),
+      set: vi.fn((values: any) => ({
+        where: vi.fn(async () => {
+          if (state.usersById.size === 1) {
+            const user = state.usersById.values().next().value;
+            if (user) Object.assign(user, values);
+          }
+          if (state.usersByEmail.size === 1) {
+            const user = state.usersByEmail.values().next().value;
+            if (user) Object.assign(user, values);
+          }
+          return undefined;
+        }),
       })),
     })),
   };
@@ -96,18 +107,20 @@ vi.mock('@/lib/db', () => {
 });
 
 vi.mock('@/lib/jwt', () => {
+  let refreshCounter = 0;
   return {
     generateAccessToken: vi.fn(async () => 'access.token'),
-    generateRefreshToken: vi.fn(async () => 'refresh.token'),
+    generateRefreshToken: vi.fn(async () => `refresh.token.${++refreshCounter}`),
     verifyRefreshToken: vi.fn(async (token: string) => {
       if (token === 'valid.refresh') return { userId: 1 };
+      if (token.startsWith('refresh.token.')) return { userId: 1 };
       return null;
     }),
   };
 });
 
 import * as dbModule from '@/lib/db';
-import { comparePassword, hashPassword, login, refreshAccessToken } from '@/services/auth.service';
+import { comparePassword, hashPassword, login, logout, refreshAccessToken } from '@/services/auth.service';
 
 const __mockDb = (dbModule as any).__mockDb;
 
@@ -179,23 +192,27 @@ describe('Auth service', () => {
     __mockDb.__reset();
     const passwordHash = await hashPassword('test123456');
     __mockDb.__setRoleById(2, { id: 2, nombre: 'Dueño' });
-    __mockDb.__setUserByEmail('dueno@onebusiness.test', {
+    const user = {
       id: 1,
       email: 'dueno@onebusiness.test',
       passwordHash,
       rolId: 2,
       activo: true,
       nombreCompleto: 'Juan Dueño',
-    });
+      refreshTokenHash: null,
+      tokenVersion: 0,
+    };
+    __mockDb.__setUserByEmail('dueno@onebusiness.test', user);
     __mockDb.__setUserNegocios(1, [1, 2, 3]);
 
     const result = await login('dueno@onebusiness.test', 'test123456');
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.accessToken).toBe('access.token');
-      expect(result.refreshToken).toBe('refresh.token');
+      expect(result.refreshToken).toMatch(/^refresh\.token\.\d+$/);
       expect(result.user.email).toBe('dueno@onebusiness.test');
       expect(result.user.negocios).toEqual([1, 2, 3]);
+      expect(user.refreshTokenHash).toMatch(/^[0-9a-f]{64}$/);
     }
   });
 
@@ -215,6 +232,8 @@ describe('Auth service', () => {
       rolId: 2,
       activo: true,
       nombreCompleto: 'User U',
+      refreshTokenHash: createHash('sha256').update('valid.refresh').digest('hex'),
+      tokenVersion: 0,
     });
     __mockDb.__setUserNegocios(1, [1]);
 
@@ -222,6 +241,7 @@ describe('Auth service', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.accessToken).toBe('access.token');
+      expect(result.refreshToken).toMatch(/^refresh\.token\.\d+$/);
     }
   });
 
@@ -258,10 +278,158 @@ describe('Auth service', () => {
       rolId: 999,
       activo: true,
       nombreCompleto: 'User U',
+      refreshTokenHash: createHash('sha256').update('valid.refresh').digest('hex'),
+      tokenVersion: 0,
     });
 
     const result = await refreshAccessToken('valid.refresh');
     expect(result.success).toBe(false);
+  });
+
+  describe('Refresh Token Rotation', () => {
+    it('login guarda hash del refresh token en BD', async () => {
+      __mockDb.__reset();
+      const passwordHash = await hashPassword('test123456');
+      __mockDb.__setRoleById(2, { id: 2, nombre: 'Dueño' });
+      const user = {
+        id: 1,
+        email: 'dueno@onebusiness.test',
+        passwordHash,
+        rolId: 2,
+        activo: true,
+        nombreCompleto: 'Juan Dueño',
+        refreshTokenHash: null,
+        tokenVersion: 0,
+      };
+      __mockDb.__setUserByEmail('dueno@onebusiness.test', user);
+      __mockDb.__setUserNegocios(1, [1]);
+
+      const result = await login('dueno@onebusiness.test', 'test123456');
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+
+      expect(user.refreshTokenHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(user.refreshTokenHash).toBe(createHash('sha256').update(result.refreshToken).digest('hex'));
+    });
+
+    it('refresh genera nuevo token y actualiza hash en BD', async () => {
+      __mockDb.__reset();
+      const passwordHash = await hashPassword('test123456');
+      __mockDb.__setRoleById(2, { id: 2, nombre: 'Admin' });
+      const user = {
+        id: 1,
+        email: 'u@t.com',
+        passwordHash,
+        rolId: 2,
+        activo: true,
+        nombreCompleto: 'User U',
+        refreshTokenHash: null,
+        tokenVersion: 0,
+      };
+      __mockDb.__setUserByEmail('u@t.com', user);
+      __mockDb.__setUserNegocios(1, [1]);
+
+      const loginResult = await login('u@t.com', 'test123456');
+      expect(loginResult.success).toBe(true);
+      if (!loginResult.success) return;
+      const refreshToken1 = loginResult.refreshToken;
+      const hash1 = user.refreshTokenHash;
+      expect(hash1).toBe(createHash('sha256').update(refreshToken1).digest('hex'));
+
+      const refreshResult = await refreshAccessToken(refreshToken1);
+      expect(refreshResult.success).toBe(true);
+      if (!refreshResult.success) return;
+      const refreshToken2 = refreshResult.refreshToken;
+
+      const hash2 = user.refreshTokenHash;
+      expect(hash2).toBe(createHash('sha256').update(refreshToken2).digest('hex'));
+      expect(hash1).not.toBe(hash2);
+    });
+
+    it('replay attack: usar refresh token viejo retorna 401', async () => {
+      __mockDb.__reset();
+      const passwordHash = await hashPassword('test123456');
+      __mockDb.__setRoleById(2, { id: 2, nombre: 'Admin' });
+      const user = {
+        id: 1,
+        email: 'u@t.com',
+        passwordHash,
+        rolId: 2,
+        activo: true,
+        nombreCompleto: 'User U',
+        refreshTokenHash: null,
+        tokenVersion: 0,
+      };
+      __mockDb.__setUserByEmail('u@t.com', user);
+      __mockDb.__setUserNegocios(1, [1]);
+
+      const loginResult = await login('u@t.com', 'test123456');
+      expect(loginResult.success).toBe(true);
+      if (!loginResult.success) return;
+      const refreshToken1 = loginResult.refreshToken;
+
+      const refreshResult1 = await refreshAccessToken(refreshToken1);
+      expect(refreshResult1.success).toBe(true);
+      if (!refreshResult1.success) return;
+
+      const replay = await refreshAccessToken(refreshToken1);
+      expect(replay.success).toBe(false);
+      expect(user.refreshTokenHash).toBeNull();
+    });
+
+    it('logout invalida el refresh token server-side', async () => {
+      __mockDb.__reset();
+      const passwordHash = await hashPassword('test123456');
+      __mockDb.__setRoleById(2, { id: 2, nombre: 'Admin' });
+      const user = {
+        id: 1,
+        email: 'u@t.com',
+        passwordHash,
+        rolId: 2,
+        activo: true,
+        nombreCompleto: 'User U',
+        refreshTokenHash: null,
+        tokenVersion: 0,
+      };
+      __mockDb.__setUserByEmail('u@t.com', user);
+      __mockDb.__setUserNegocios(1, [1]);
+
+      const loginResult = await login('u@t.com', 'test123456');
+      expect(loginResult.success).toBe(true);
+      if (!loginResult.success) return;
+
+      await logout(1);
+      expect(user.refreshTokenHash).toBeNull();
+
+      const refreshResult = await refreshAccessToken(loginResult.refreshToken);
+      expect(refreshResult.success).toBe(false);
+    });
+
+    it('refresh con token revocado (hash null) retorna 401', async () => {
+      __mockDb.__reset();
+      __mockDb.__setRoleById(2, { id: 2, nombre: 'Admin' });
+      const passwordHash = await hashPassword('test123456');
+      const user = {
+        id: 1,
+        email: 'u@t.com',
+        passwordHash,
+        rolId: 2,
+        activo: true,
+        nombreCompleto: 'User U',
+        refreshTokenHash: null,
+        tokenVersion: 0,
+      };
+      __mockDb.__setUserByEmail('u@t.com', user);
+      __mockDb.__setUserNegocios(1, [1]);
+
+      const loginResult = await login('u@t.com', 'test123456');
+      expect(loginResult.success).toBe(true);
+      if (!loginResult.success) return;
+
+      user.refreshTokenHash = null;
+      const refreshResult = await refreshAccessToken(loginResult.refreshToken);
+      expect(refreshResult.success).toBe(false);
+    });
   });
 });
 

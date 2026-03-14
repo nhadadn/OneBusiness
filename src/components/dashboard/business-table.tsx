@@ -70,7 +70,7 @@ export function BusinessTable({ negocioId }: { negocioId?: number }) {
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-slate-500">
+                <TableCell colSpan={4} className="text-slate-600">
                   {isLoading ? 'Cargando...' : 'Sin negocios'}
                 </TableCell>
               </TableRow>

@@ -1,24 +1,33 @@
 'use client';
 
-import * as React from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import type { LoginResponse } from '@/types/auth.types';
-import { apiFetch, REFRESH_TOKEN_KEY, TOKEN_KEY, USER_KEY } from '@/lib/api-client';
+import { setApiClientAccessToken } from '@/lib/api-client';
 
 const SESSION_COOKIE_NAME = 'onebusiness_session';
 
 export type User = LoginResponse['user'];
 
 export type AuthContextValue = {
+  accessToken: string | null;
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
-  refreshAuth: () => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<string | null>;
 };
 
-export const AuthContext = React.createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 function setSessionCookie(authenticated: boolean) {
   if (typeof document === 'undefined') return;
@@ -29,92 +38,155 @@ function setSessionCookie(authenticated: boolean) {
   }
 }
 
-function safeParseUser(raw: string | null): User | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as User;
-  } catch {
-    return null;
-  }
-}
+type RefreshResponse = {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: User;
+  usuario?: User;
+  error?: string;
+};
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+type LoginApiResponse = {
+  success: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  user?: User;
+  usuario?: User;
+  error?: string;
+};
 
-  React.useEffect(() => {
-    const storedUser = safeParseUser(localStorage.getItem(USER_KEY));
-    const token = localStorage.getItem(TOKEN_KEY);
-    const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    if (storedUser && token && refresh) {
-      setUser(storedUser);
-      setSessionCookie(true);
-    } else {
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      setSessionCookie(false);
+  const isRefreshing = useRef(false);
+  const refreshPromise = useRef<Promise<string | null> | null>(null);
+
+  const refreshSession = useCallback(async (): Promise<string | null> => {
+    if (isRefreshing.current && refreshPromise.current) {
+      return refreshPromise.current;
     }
 
-    setIsLoading(false);
+    isRefreshing.current = true;
+    refreshPromise.current = (async () => {
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+
+        if (!res.ok) {
+          setAccessToken(null);
+          setUser(null);
+          setApiClientAccessToken(null);
+          setSessionCookie(false);
+          return null;
+        }
+
+        const data = (await res.json()) as RefreshResponse;
+        const nextToken = data.accessToken ?? null;
+        const nextUser = (data.user ?? data.usuario) ?? null;
+
+        if (!nextToken || !nextUser) {
+          setAccessToken(null);
+          setUser(null);
+          setApiClientAccessToken(null);
+          setSessionCookie(false);
+          return null;
+        }
+
+        setAccessToken(nextToken);
+        setUser(nextUser);
+        setApiClientAccessToken(nextToken);
+        setSessionCookie(true);
+        return nextToken;
+      } catch {
+        setAccessToken(null);
+        setUser(null);
+        setApiClientAccessToken(null);
+        setSessionCookie(false);
+        return null;
+      } finally {
+        isRefreshing.current = false;
+        refreshPromise.current = null;
+      }
+    })();
+
+    return refreshPromise.current;
   }, []);
 
-  const login = React.useCallback(async (email: string, password: string) => {
+  useEffect(() => {
+    refreshSession().finally(() => setIsLoading(false));
+  }, [refreshSession]);
+
+  const login = useCallback(async (email: string, password: string) => {
     try {
-      const data = await apiFetch<LoginResponse>('/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
-        skipAuth: true,
-        body: { email, password },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
       });
 
-      localStorage.setItem(TOKEN_KEY, data.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      setUser(data.user);
-      setSessionCookie(true);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        return { success: false, error: data.error ?? 'Error al iniciar sesión' };
+      }
 
+      const data = (await res.json()) as LoginApiResponse;
+      const nextToken = data.accessToken ?? null;
+      const nextUser = (data.user ?? data.usuario) ?? null;
+
+      if (!nextToken || !nextUser) {
+        return { success: false, error: 'Respuesta inválida del servidor' };
+      }
+
+      setAccessToken(nextToken);
+      setUser(nextUser);
+      setApiClientAccessToken(nextToken);
+      setSessionCookie(true);
       return { success: true };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Error de conexión' };
     }
   }, []);
 
-  const logout = React.useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
-    setSessionCookie(false);
-  }, []);
-
-  const refreshAuth = React.useCallback(async (): Promise<boolean> => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!refreshToken) return false;
-
+  const logout = useCallback(async () => {
     try {
-      const data = await apiFetch<{ success: boolean; accessToken: string }>('/api/auth/refresh', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
-        skipAuth: true,
-        body: { refreshToken },
+        credentials: 'include',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-
-      localStorage.setItem(TOKEN_KEY, data.accessToken);
-      return true;
-    } catch {
-      logout();
-      return false;
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+      setApiClientAccessToken(null);
+      setSessionCookie(false);
     }
-  }, [logout]);
+  }, [accessToken]);
 
   const value: AuthContextValue = {
+    accessToken,
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: accessToken !== null && user !== null,
     login,
     logout,
-    refreshAuth,
+    refreshSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error('useAuth debe usarse dentro de <AuthProvider>');
+  }
+  return ctx;
 }

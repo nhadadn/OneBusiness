@@ -65,10 +65,9 @@ export const AlertDialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-slate-500', className)} {...props} />
+  <DialogPrimitive.Description ref={ref} className={cn('text-sm text-slate-600', className)} {...props} />
 ));
 AlertDialogDescription.displayName = DialogPrimitive.Description.displayName;
 
 export const AlertDialogAction = DialogPrimitive.Close;
 export const AlertDialogCancel = DialogPrimitive.Close;
-

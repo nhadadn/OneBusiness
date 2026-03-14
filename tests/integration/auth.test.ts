@@ -4,6 +4,7 @@ vi.mock('@/services/auth.service', () => {
   return {
     login: vi.fn(),
     refreshAccessToken: vi.fn(),
+    logout: vi.fn(),
   };
 });
 

@@ -1,8 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Pencil, Power, PowerOff } from 'lucide-react';
+import { Loader2, Pencil, Power, PowerOff, UserRound } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { EmptyState } from '@/components/shared/empty-state';
+import { ErrorState } from '@/components/shared/error-state';
+import { UsuariosLoader } from '@/components/shared/page-loader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,6 +17,7 @@ import type { UsuarioListItem } from '@/types/usuario.types';
 export type UsuariosTableProps = {
   negocioId?: number;
   onEdit: (usuario: UsuarioListItem) => void;
+  onCreate?: () => void;
 };
 
 function getRolBadgeVariant(rol: string): 'default' | 'secondary' | 'outline' {
@@ -26,35 +31,43 @@ function getRolBadgeVariant(rol: string): 'default' | 'secondary' | 'outline' {
   }
 }
 
-export function UsuariosTable({ negocioId, onEdit }: UsuariosTableProps) {
+export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProps) {
   const { user } = useAuth();
   const canEdit = user?.rol === 'Dueño' || user?.rol === 'Admin';
 
-  const { data, isLoading, error } = useUsuarios({ negocioId });
+  const query = useUsuarios({ negocioId });
   const updateUsuario = useUpdateUsuario({ negocioId });
 
-  const usuarios = data?.data.usuarios ?? [];
+  const usuarios = query.data?.data.usuarios ?? [];
 
   const handleToggleActivo = React.useCallback(
     async (usuario: UsuarioListItem) => {
-      await updateUsuario.mutateAsync({ id: usuario.id, data: { activo: !usuario.activo } });
+      try {
+        await updateUsuario.mutateAsync({ id: usuario.id, data: { activo: !usuario.activo } });
+        toast.success(usuario.activo ? 'Usuario desactivado' : 'Usuario activado', { duration: 2500 });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'No se pudo actualizar el usuario', { duration: 5000 });
+      }
     },
     [updateUsuario]
   );
 
-  if (isLoading) {
-    return <div className="text-sm text-slate-600">Cargando usuarios...</div>;
+  if (query.isLoading) {
+    return <UsuariosLoader />;
   }
 
-  if (error instanceof Error) {
-    return <div className="text-sm text-red-600">{error.message}</div>;
+  if (query.error instanceof Error) {
+    return <ErrorState message={query.error.message} onRetry={() => query.refetch()} />;
   }
 
   if (usuarios.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        No hay usuarios para mostrar.
-      </div>
+      <EmptyState
+        icon={UserRound}
+        title="Sin usuarios"
+        description="Agrega el primer usuario para este negocio."
+        action={canEdit && onCreate ? { label: 'Nuevo usuario', onClick: onCreate } : undefined}
+      />
     );
   }
 
@@ -97,7 +110,13 @@ export function UsuariosTable({ negocioId, onEdit }: UsuariosTableProps) {
                       onClick={() => handleToggleActivo(usuario)}
                       disabled={updateUsuario.isPending}
                     >
-                      {usuario.activo ? <PowerOff className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                      {updateUsuario.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : usuario.activo ? (
+                        <PowerOff className="h-4 w-4" />
+                      ) : (
+                        <Power className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </TableCell>
@@ -109,4 +128,3 @@ export function UsuariosTable({ negocioId, onEdit }: UsuariosTableProps) {
     </div>
   );
 }
-

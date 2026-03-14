@@ -1,8 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Pencil, Trash2, Wallet } from 'lucide-react';
+import { CreditCard, Loader2, Pencil, Trash2, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 
+import { EmptyState } from '@/components/shared/empty-state';
+import { ErrorState } from '@/components/shared/error-state';
+import { ConfigListLoader } from '@/components/shared/page-loader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,45 +29,50 @@ export type CuentasBancoTableProps = {
   negocioId: number | null;
   onEdit: (cuenta: CuentaBancoListItem) => void;
   onEditSaldo: (cuenta: CuentaBancoListItem) => void;
+  onCreate?: () => void;
 };
 
-export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo }: CuentasBancoTableProps) {
+export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: CuentasBancoTableProps) {
   const { user } = useAuth();
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
 
-  const { data, isLoading, error } = useCuentasBanco({ negocioId });
+  const query = useCuentasBanco({ negocioId });
   const deleteCuenta = useDeleteCuentaBanco({ negocioId });
 
-  const cuentas = data?.data ?? [];
+  const cuentas = query.data?.data ?? [];
 
   const handleDelete = React.useCallback(
     async (cuenta: CuentaBancoListItem) => {
-      await deleteCuenta.mutateAsync(cuenta.id);
+      try {
+        await deleteCuenta.mutateAsync(cuenta.id);
+        toast.success('Cuenta bancaria eliminada', { duration: 2500 });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'No se pudo eliminar la cuenta', { duration: 5000 });
+      }
     },
     [deleteCuenta]
   );
 
   if (typeof negocioId !== 'number') {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        Selecciona un negocio para ver sus cuentas.
-      </div>
-    );
+    return <EmptyState icon={CreditCard} title="Sin negocio seleccionado" description="Selecciona un negocio para ver sus cuentas." />;
   }
 
-  if (isLoading) {
-    return <div className="text-sm text-slate-600">Cargando cuentas...</div>;
+  if (query.isLoading) {
+    return <ConfigListLoader />;
   }
 
-  if (error instanceof Error) {
-    return <div className="text-sm text-red-600">{error.message}</div>;
+  if (query.error instanceof Error) {
+    return <ErrorState message={query.error.message} onRetry={() => query.refetch()} />;
   }
 
   if (cuentas.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
-        No hay cuentas para mostrar.
-      </div>
+      <EmptyState
+        icon={CreditCard}
+        title="Sin cuentas bancarias"
+        description="Agrega la primera cuenta bancaria para este negocio."
+        action={canManage && onCreate ? { label: 'Nueva cuenta', onClick: onCreate } : undefined}
+      />
     );
   }
 
@@ -114,7 +123,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo }: CuentasBan
                         onClick={() => handleDelete(cuenta)}
                         disabled={deleteCuenta.isPending}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        {deleteCuenta.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </div>
                   </TableCell>
@@ -127,4 +136,3 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo }: CuentasBan
     </div>
   );
 }
-

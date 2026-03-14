@@ -8,7 +8,11 @@ describe('Permissions middleware', () => {
   });
 
   it('hasPermission_Externo_write', () => {
-    expect(hasPermission('Externo', 'write')).toBe(true);
+    expect(hasPermission('Externo', 'write')).toBe(false);
+  });
+
+  it('hasPermission_Externo_read', () => {
+    expect(hasPermission('Externo', 'read')).toBe(true);
   });
 
   it('hasPermission_Socio_export', () => {
@@ -37,5 +41,17 @@ describe('Permissions middleware', () => {
       'GET'
     );
     expect(result.authorized).toBe(false);
+  });
+
+  it('authorizeRequest bloquea Externo en métodos de escritura', () => {
+    const auth = {
+      success: true as const,
+      user: { userId: 4, email: 'externo@onebusiness.test', rol: 'Externo', negocios: [1] },
+    };
+
+    expect(authorizeRequest(auth, 'POST').authorized).toBe(false);
+    expect(authorizeRequest(auth, 'PUT').authorized).toBe(false);
+    expect(authorizeRequest(auth, 'PATCH').authorized).toBe(false);
+    expect(authorizeRequest(auth, 'DELETE').authorized).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -102,6 +103,7 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['categorias'] });
+      toast.success(isEditing ? 'Categoría actualizada' : 'Categoría creada', { duration: 2500 });
       onExito();
     },
   });
@@ -115,7 +117,11 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
   }, [errorMessage]);
 
   const onSubmit = async (values: CreateValues | UpdateValues) => {
-    await mutation.mutateAsync(values);
+    try {
+      await mutation.mutateAsync(values);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo guardar la categoría', { duration: 5000 });
+    }
   };
 
   return (

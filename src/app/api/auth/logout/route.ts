@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { verifyAccessToken } from '@/lib/jwt';
+import { auditLog, getRequestContext } from '@/lib/audit-logger';
+import { logout } from '@/services/auth.service';
 
 export const dynamic = 'force-dynamic';
+
+const REFRESH_COOKIE_NAME = 'onebusiness_refresh_token';
+const SESSION_COOKIE_NAME = 'onebusiness_session';
 
 function getBearerToken(authorizationHeader: string | null): string | null {
   if (!authorizationHeader) return null;
@@ -22,5 +27,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Token inválido' }, { status: 401 });
   }
 
-  return NextResponse.json({ success: true, message: 'Logout exitoso' });
+  await logout(payload.userId);
+  const response = NextResponse.json({ success: true, message: 'Logout exitoso' });
+  response.cookies.set({
+    name: REFRESH_COOKIE_NAME,
+    value: '',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  });
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: '',
+    httpOnly: false,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  });
+
+  void auditLog({
+    evento: 'LOGOUT',
+    exitoso: true,
+    userId: payload.userId,
+    recurso: '/api/auth/logout',
+    ...getRequestContext(request),
+  });
+
+  return response;
 }

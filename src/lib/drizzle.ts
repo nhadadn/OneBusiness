@@ -81,6 +81,7 @@ export const usuarios = pgTable('usuarios', {
   fechaUltimoAcceso: timestamp('fecha_ultimo_acceso'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  refreshTokenHash: varchar('refresh_token_hash', { length: 64 }),
 });
 
 export const usuariosRelations = relations(usuarios, ({ one, many }) => ({
@@ -242,3 +243,18 @@ export const categoriasRelations = relations(categorias, ({ one }) => ({
     references: [negocios.id],
   }),
 }));
+
+export const auditLogs = pgTable('audit_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id'),
+  negocioId: integer('negocio_id'),
+  evento: varchar('evento', { length: 60 }).notNull(),
+  recurso: varchar('recurso', { length: 100 }),
+  recursoId: varchar('recurso_id', { length: 50 }),
+  exitoso: boolean('exitoso').notNull(),
+  detalles: text('detalles'),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: varchar('user_agent', { length: 300 }),
+  requestId: varchar('request_id', { length: 36 }),
+  creadoEn: timestamp('creado_en').defaultNow().notNull(),
+});

@@ -2,11 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Plus, Tags } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 import { CategoriaForm } from '@/components/categorias/categoria-form';
 import { CategoriasTable } from '@/components/categorias/categorias-table';
+import { EmptyState } from '@/components/shared/empty-state';
+import { ErrorState } from '@/components/shared/error-state';
+import { ConfigListLoader } from '@/components/shared/page-loader';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -82,7 +86,13 @@ export default function CategoriasPage() {
     },
   });
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 py-6">
+        <ConfigListLoader />
+      </div>
+    );
+  }
   if (!user) return null;
   if (user.rol === 'Externo') return null;
 
@@ -102,7 +112,12 @@ export default function CategoriasPage() {
     if (!canManage) return;
     const ok = window.confirm('¿Deseas desactivar esta categoría?');
     if (!ok) return;
-    await desactivarMutation.mutateAsync(id);
+    try {
+      await desactivarMutation.mutateAsync(id);
+      toast.success('Categoría desactivada', { duration: 2500 });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo desactivar la categoría', { duration: 5000 });
+    }
   };
 
   return (
@@ -110,7 +125,7 @@ export default function CategoriasPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Categorías</h1>
-          <p className="text-slate-500">Gestiona las categorías de movimientos</p>
+          <p className="text-slate-600">Gestiona las categorías de movimientos</p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -148,12 +163,20 @@ export default function CategoriasPage() {
         </Button>
       </div>
 
-      {categoriasQuery.isLoading ? <div className="text-sm text-slate-600">Cargando categorías...</div> : null}
-      {categoriasQuery.error instanceof Error ? (
-        <div className="text-sm text-red-600">{categoriasQuery.error.message}</div>
-      ) : null}
-
-      {!categoriasQuery.isLoading && !(categoriasQuery.error instanceof Error) ? (
+      {typeof negocioId !== 'number' ? (
+        <EmptyState icon={Tags} title="Sin negocio seleccionado" description="Selecciona un negocio para ver sus categorías." />
+      ) : categoriasQuery.isLoading ? (
+        <ConfigListLoader />
+      ) : categoriasQuery.error instanceof Error ? (
+        <ErrorState message={categoriasQuery.error.message} onRetry={() => categoriasQuery.refetch()} />
+      ) : categorias.length === 0 ? (
+        <EmptyState
+          icon={Tags}
+          title="Sin categorías"
+          description="Las categorías ayudan a organizar los movimientos."
+          action={canManage ? { label: 'Nueva categoría', onClick: handleNueva } : undefined}
+        />
+      ) : (
         <CategoriasTable
           categorias={categorias}
           onEditar={handleEditar}
@@ -161,7 +184,7 @@ export default function CategoriasPage() {
           puedeEditar={user.rol !== 'Externo'}
           rol={user.rol}
         />
-      ) : null}
+      )}
 
       <Dialog open={modalAbierto} onOpenChange={setModalAbierto}>
         <DialogContent>
@@ -191,4 +214,3 @@ export default function CategoriasPage() {
     </div>
   );
 }
-

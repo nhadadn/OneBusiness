@@ -4,6 +4,7 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -90,33 +91,39 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
   const isSubmitting = createCuenta.isPending || updateCuenta.isPending;
 
   const onSubmit = async (values: CreateValues | UpdateValues) => {
-    if (typeof negocioId !== 'number') {
-      throw new Error('Negocio requerido');
-    }
+    try {
+      if (typeof negocioId !== 'number') {
+        throw new Error('Negocio requerido');
+      }
 
-    if (isEditing) {
-      const payload: UpdateCuentaBancoData = {
+      if (isEditing) {
+        const payload: UpdateCuentaBancoData = {
+          nombre: values.nombre,
+          tipo: values.tipo as TipoCuenta,
+          bancoInstitucion: values.bancoInstitucion?.trim() ? values.bancoInstitucion : undefined,
+          titular: values.titular?.trim() ? values.titular : undefined,
+        };
+
+        await updateCuenta.mutateAsync({ id: cuenta!.id, data: payload });
+        toast.success('Cuenta bancaria actualizada', { duration: 2500 });
+        onSuccess();
+        return;
+      }
+
+      const payload: CreateCuentaBancoData = {
         nombre: values.nombre,
         tipo: values.tipo as TipoCuenta,
         bancoInstitucion: values.bancoInstitucion?.trim() ? values.bancoInstitucion : undefined,
         titular: values.titular?.trim() ? values.titular : undefined,
+        saldoInicial: (values as CreateValues).saldoInicial,
       };
 
-      await updateCuenta.mutateAsync({ id: cuenta!.id, data: payload });
+      await createCuenta.mutateAsync(payload);
+      toast.success('Cuenta bancaria creada', { duration: 2500 });
       onSuccess();
-      return;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo guardar la cuenta', { duration: 5000 });
     }
-
-    const payload: CreateCuentaBancoData = {
-      nombre: values.nombre,
-      tipo: values.tipo as TipoCuenta,
-      bancoInstitucion: values.bancoInstitucion?.trim() ? values.bancoInstitucion : undefined,
-      titular: values.titular?.trim() ? values.titular : undefined,
-      saldoInicial: (values as CreateValues).saldoInicial,
-    };
-
-    await createCuenta.mutateAsync(payload);
-    onSuccess();
   };
 
   return (
@@ -213,10 +220,9 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
         )}
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isEditing ? 'Actualizar cuenta' : 'Crear cuenta'}
+          {isSubmitting ? 'Guardando...' : isEditing ? 'Actualizar cuenta' : 'Crear cuenta'}
         </Button>
       </form>
     </Form>
   );
 }
-

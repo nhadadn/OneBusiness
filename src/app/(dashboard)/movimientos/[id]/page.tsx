@@ -170,7 +170,7 @@ export default function MovimientoDetallePage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Movimiento #{detalle.id}</h1>
-            <p className="text-slate-500">
+            <p className="text-slate-600">
               {detalle.concepto} · {monto}
             </p>
           </div>
@@ -205,45 +205,45 @@ export default function MovimientoDetallePage() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Negocio</div>
+            <div className="text-slate-600">Negocio</div>
             <div className="font-medium">#{detalle.negocioId}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Tipo</div>
+            <div className="text-slate-600">Tipo</div>
             <div className="font-medium">{detalle.tipo}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Estado</div>
+            <div className="text-slate-600">Estado</div>
             <div className="font-medium">{detalle.estado}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Fecha</div>
+            <div className="text-slate-600">Fecha</div>
             <div className="font-medium">{detalle.fecha}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Monto</div>
+            <div className="text-slate-600">Monto</div>
             <div className="font-mono font-medium">{monto}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Cuenta</div>
+            <div className="text-slate-600">Cuenta</div>
             <div className="font-medium">{detalle.cuentaBanco.nombre}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Tercero</div>
+            <div className="text-slate-600">Tercero</div>
             <div className="font-medium">{detalle.tercero ?? '—'}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Creado por</div>
+            <div className="text-slate-600">Creado por</div>
             <div className="font-medium">
               {detalle.creadoPor.nombre} ({detalle.creadoPor.email})
             </div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Versión</div>
+            <div className="text-slate-600">Versión</div>
             <div className="font-medium">v{detalle.version}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-500">Traspaso</div>
+            <div className="text-slate-600">Traspaso</div>
             <div className="font-medium">{detalle.traspasoRefId ? `Espejo #${detalle.traspasoRefId}` : '—'}</div>
           </div>
           {detalle.estado === 'RECHAZADO' ? (

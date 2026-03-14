@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import { AprobacionTable } from '@/components/movimientos/aprobacion-table';
 import { MovimientoDetalleSheet } from '@/components/movimientos/movimiento-detalle-sheet';
 import { RechazoDialog } from '@/components/movimientos/rechazo-dialog';
+import { MovimientosLoader } from '@/components/shared/page-loader';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
@@ -16,17 +18,6 @@ import {
   useRechazarMovimiento,
   type MovimientoListItem,
 } from '@/hooks/use-movimientos';
-
-const LAST_NEGOCIO_KEY = 'onebusiness_last_negocio';
-
-function safeParseLastNegocio(): number | null {
-  if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem(LAST_NEGOCIO_KEY);
-  if (!raw) return null;
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) return null;
-  return parsed;
-}
 
 type NegocioOption = { id: number; label: string };
 
@@ -65,17 +56,11 @@ export default function AprobacionPage() {
     if (!user) return;
     if (typeof negocioId === 'number') return;
 
-    const last = safeParseLastNegocio();
     const fallback = negocioOptions[0]?.id ?? user.negocios?.[0];
-    const next = last && negocioOptions.some((n) => n.id === last) ? last : fallback;
+    const next = fallback;
 
     setNegocioId(typeof next === 'number' ? next : null);
   }, [negocioId, negocioOptions, user]);
-
-  useEffect(() => {
-    if (typeof negocioId !== 'number') return;
-    localStorage.setItem(LAST_NEGOCIO_KEY, String(negocioId));
-  }, [negocioId]);
 
   const aprobar = useAprobarMovimiento();
   const rechazar = useRechazarMovimiento();
@@ -88,7 +73,13 @@ export default function AprobacionPage() {
   const detalleQuery = useMovimientoDetalle(detalleId, negocioId);
   const totalPendientes = pendientesQuery.data?.total ?? 0;
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="container mx-auto space-y-6 py-6">
+        <MovimientosLoader />
+      </div>
+    );
+  }
   if (!user) return null;
   if (!canManage) return null;
 
@@ -99,7 +90,12 @@ export default function AprobacionPage() {
 
   const handleAprobar = async (mov: MovimientoListItem) => {
     if (typeof negocioId !== 'number') return;
-    await aprobar.mutateAsync({ id: mov.id, negocioId });
+    try {
+      await aprobar.mutateAsync({ id: mov.id, negocioId });
+      toast.success('Movimiento aprobado', { duration: 2500 });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo aprobar el movimiento', { duration: 5000 });
+    }
   };
 
   const handleOpenRechazo = (mov: MovimientoListItem) => {
@@ -110,7 +106,12 @@ export default function AprobacionPage() {
   const handleConfirmRechazo = async (motivo: string) => {
     if (!rechazoTarget) return;
     if (typeof negocioId !== 'number') return;
-    await rechazar.mutateAsync({ id: rechazoTarget.id, motivoRechazo: motivo, negocioId });
+    try {
+      await rechazar.mutateAsync({ id: rechazoTarget.id, motivoRechazo: motivo, negocioId });
+      toast.success('Movimiento rechazado', { duration: 2500 });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo rechazar el movimiento', { duration: 5000 });
+    }
   };
 
   return (
@@ -121,7 +122,7 @@ export default function AprobacionPage() {
             <h1 className="text-3xl font-bold">Panel de aprobación</h1>
             <Badge variant="outline">{totalPendientes}</Badge>
           </div>
-          <p className="text-slate-500">Aprueba o rechaza movimientos pendientes</p>
+          <p className="text-slate-600">Aprueba o rechaza movimientos pendientes</p>
         </div>
       </div>
 
