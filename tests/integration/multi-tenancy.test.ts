@@ -14,64 +14,14 @@ vi.mock('@/lib/db', () => {
   };
 });
 
+const movimientoServiceMocks = vi.hoisted(() => ({
+  listar: vi.fn(),
+}));
+
 vi.mock('@/services/movimiento.service', () => {
   class MovimientoService {
-    async listar() {
-      return { items: [], total: 0, page: 1, limit: 50 };
-    }
-    async crear() {
-      return { id: 1 };
-    }
-    async obtener(id: number) {
-      return {
-        id,
-        negocioId: 1,
-        centroCostoId: null,
-        tipo: 'INGRESO',
-        fecha: '2026-01-01',
-        concepto: 'Test',
-        tercero: null,
-        monto: '100',
-        cuentaBancoId: 1,
-        traspasoRefId: null,
-        estado: 'PENDIENTE',
-        creadoPor: 4,
-        aprobadoPor: null,
-        fechaAprobacion: null,
-        motivoRechazo: null,
-        version: 1,
-        activo: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    }
-    async obtenerDetalle(id: number) {
-      return {
-        id,
-        negocioId: 1,
-        fecha: '2026-01-01',
-        concepto: 'Test',
-        tercero: null,
-        tipo: 'INGRESO',
-        monto: '100',
-        estado: 'PENDIENTE',
-        version: 1,
-        activo: true,
-        createdAt: new Date().toISOString(),
-        centroCostoId: null,
-        traspasoRefId: null,
-        cuentaBanco: { id: 1, nombre: 'Cuenta' },
-        creadoPor: { id: 4, nombre: 'Externo', email: 'externo@onebusiness.test' },
-        aprobadoPor: null,
-        fechaAprobacion: null,
-        motivoRechazo: null,
-      };
-    }
-    async actualizar() {
-      return { id: 1 };
-    }
-    async eliminar() {
-      return { id: 1 };
+    async listar(...args: unknown[]) {
+      return movimientoServiceMocks.listar(...args);
     }
   }
   return { MovimientoService };
@@ -105,6 +55,8 @@ import { GET as movimientosGet } from '@/app/api/movimientos/route';
 describe('Multi-tenancy integration (handlers)', () => {
   beforeEach(() => {
     process.env.JWT_SECRET = '01234567890123456789012345678901';
+    vi.clearAllMocks();
+    movimientoServiceMocks.listar.mockResolvedValue({ items: [], total: 0, page: 1, limit: 50 });
   });
 
   it('bloquea request sin negocioId para rol no Dueño', async () => {
@@ -179,6 +131,30 @@ describe('Multi-tenancy integration (handlers)', () => {
     const body = await response.json();
     expect(body.success).toBe(true);
     expect(body.tenant.negocioId).toBe(1);
+  });
+
+  it('no retorna 409 para error técnico de enum en DB (mapea a 400)', async () => {
+    movimientoServiceMocks.listar.mockRejectedValueOnce(
+      new Error('invalid input value for enum estado_movimiento: "PENDIENTE"'),
+    );
+
+    const token = await generateAccessToken({
+      userId: 2,
+      email: 'socio@onebusiness.test',
+      rol: 'Socio',
+      negocios: [1],
+      tokenVersion: 0,
+    });
+
+    const request = new Request('http://localhost/api/movimientos?negocioId=1&estado=PENDIENTE&page=1&limit=10', {
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    const response = await movimientosGet(request);
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.success).toBe(false);
+    expect(body.error).toMatch(/estado_movimiento/);
   });
 
   it('Dueño puede omitir negocioId y ver todos', async () => {

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SheetFooter } from '@/components/ui/sheet';
 import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
@@ -43,6 +44,8 @@ type Values = z.infer<typeof schema>;
 
 export type MovimientoFormProps = {
   onSuccess: () => void;
+  onSuccessAndNew?: () => void;
+  onCancel?: () => void;
   negocioId?: number | null;
 };
 
@@ -50,9 +53,15 @@ function todayISO() {
   return new Date().toISOString().split('T')[0]!;
 }
 
-export function MovimientoForm({ onSuccess, negocioId: preferredNegocioId }: MovimientoFormProps) {
+export function MovimientoForm({
+  onSuccess,
+  onSuccessAndNew,
+  onCancel,
+  negocioId: preferredNegocioId,
+}: MovimientoFormProps) {
   const { user, isLoading } = useAuth();
   const isOwner = user?.rol === 'Dueño';
+  const [submitMode, setSubmitMode] = React.useState<'close' | 'new'>('close');
 
   const negociosQuery = useNegocios({ negocioId: undefined, enabled: Boolean(isOwner) });
 
@@ -140,6 +149,48 @@ export function MovimientoForm({ onSuccess, negocioId: preferredNegocioId }: Mov
 
     try {
       await createMovimiento.mutateAsync(payload);
+      if (submitMode === 'new') {
+        const negocioIdToKeep = values.negocioId;
+        const cuentaBancoIdToKeep = values.cuentaBancoId;
+        const fechaToKeep = values.fecha;
+
+        if (typeof negocioIdToKeep === 'number' && typeof cuentaBancoIdToKeep === 'number' && typeof fechaToKeep === 'string') {
+          form.reset({
+            negocioId: negocioIdToKeep,
+            tipo: 'INGRESO',
+            fecha: fechaToKeep,
+            concepto: '',
+            tercero: '',
+            monto: '',
+            cuentaBancoId: cuentaBancoIdToKeep,
+            cuentaBancoDestinoId: undefined,
+            negocioDestinoId: undefined,
+            centroCostoId: undefined,
+          });
+        } else {
+          form.reset({
+            negocioId: defaultNegocioId,
+            tipo: 'INGRESO',
+            fecha: todayISO(),
+            concepto: '',
+            tercero: '',
+            monto: '',
+            cuentaBancoId: undefined as unknown as number,
+            cuentaBancoDestinoId: undefined,
+            negocioDestinoId: undefined,
+            centroCostoId: undefined,
+          });
+        }
+
+        if (onSuccessAndNew) {
+          onSuccessAndNew();
+        } else {
+          toast.success('Movimiento guardado. Agrega el siguiente.', { duration: 2500 });
+        }
+
+        return;
+      }
+
       toast.success('Movimiento creado exitosamente', { duration: 2500 });
       onSuccess();
     } catch (error) {
@@ -367,9 +418,24 @@ export function MovimientoForm({ onSuccess, negocioId: preferredNegocioId }: Mov
 
         {createMovimiento.error instanceof Error && <div className="text-sm text-red-600">{createMovimiento.error.message}</div>}
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? 'Guardando...' : 'Guardar movimiento'}
-        </Button>
+        <SheetFooter className="mt-6">
+          {typeof onCancel === 'function' ? (
+            <Button variant="ghost" onClick={onCancel} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            type="submit"
+            onClick={() => setSubmitMode('new')}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Guardando...' : 'Guardar y agregar otro'}
+          </Button>
+          <Button type="submit" onClick={() => setSubmitMode('close')} disabled={isSubmitting}>
+            {isSubmitting ? 'Guardando...' : 'Guardar y cerrar'}
+          </Button>
+        </SheetFooter>
       </form>
     </Form>
   );

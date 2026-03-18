@@ -11,9 +11,14 @@ export const negocios = pgTable('negocios', {
   modeloIngreso: varchar('modelo_ingreso', { length: 100 }),
   tieneSocios: boolean('tiene_socios').default(false),
   activo: boolean('activo').default(true),
+  umbralAlerta: numeric('umbral_alerta', { precision: 12, scale: 2 }),
+  umbralCritico: numeric('umbral_critico', { precision: 12, scale: 2 }),
   configuracion: jsonb('configuracion'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  rfc: varchar('rfc', { length: 20 }),
+  direccion: text('direccion'),
+  telefono: varchar('telefono', { length: 30 }),
 });
 
 export const negociosRelations = relations(negocios, ({ many }) => ({
@@ -123,6 +128,7 @@ export const tipoCuentaEnum = pgEnum('tipo_cuenta', ['EFECTIVO', 'BANCARIA', 'CA
 export const tipoMovimientoEnum = pgEnum('tipo_movimiento', ['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']);
 export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO']);
 export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['INGRESO', 'EGRESO']);
+export const estadoCotizacionEnum = pgEnum('estado_cotizacion', ['BORRADOR', 'ENVIADA', 'APROBADA', 'FACTURADA', 'CANCELADA']);
 
 export const categorias = pgTable('categorias', {
   id: serial('id').primaryKey(),
@@ -172,7 +178,7 @@ export const movimientos = pgTable('movimientos', {
   tercero: varchar('tercero', { length: 150 }),
   monto: numeric('monto', { precision: 15, scale: 2 }).notNull(),
   cuentaBancoId: integer('cuenta_banco_id').notNull().references(() => cuentasBanco.id),
-  traspasoRefId: integer('traspaso_ref_id'),
+  traspasoRefId: integer('traspaso_id'),
   estado: estadoMovimientoEnum('estado').notNull().default('PENDIENTE'),
   creadoPor: integer('creado_por').notNull().references(() => usuarios.id),
   aprobadoPor: integer('aprobado_por').references(() => usuarios.id),
@@ -191,11 +197,62 @@ export const movimientos = pgTable('movimientos', {
     cuentaBancoIdx: index('idx_movimientos_cuenta_banco').on(table.cuentaBancoId),
     creadoPorIdx: index('idx_movimientos_creado_por').on(table.creadoPor),
     aprobadoPorIdx: index('idx_movimientos_aprobado_por').on(table.aprobadoPor),
-    traspasoRefIdx: index('idx_movimientos_traspaso_ref').on(table.traspasoRefId),
+    traspasoRefIdx: index('idx_movimientos_traspaso_id').on(table.traspasoRefId),
     traspasoRefFk: foreignKey({
       columns: [table.traspasoRefId],
       foreignColumns: [table.id],
     }),
+  };
+});
+
+export const cotizaciones = pgTable('cotizaciones', {
+  id: serial('id').primaryKey(),
+  negocioId: integer('negocio_id').notNull().references(() => negocios.id),
+  folio: varchar('folio', { length: 20 }).notNull(),
+  folioExterno: varchar('folio_externo', { length: 30 }),
+  clienteNombre: varchar('cliente_nombre', { length: 255 }).notNull(),
+  clienteRfc: varchar('cliente_rfc', { length: 20 }),
+  clienteDireccion: text('cliente_direccion'),
+  fecha: date('fecha').notNull(),
+  estado: estadoCotizacionEnum('estado').notNull().default('BORRADOR'),
+  numeroOc: varchar('numero_oc', { length: 50 }),
+  numeroFactura: varchar('numero_factura', { length: 50 }),
+  cuentaBancoId: integer('cuenta_banco_id').references(() => cuentasBanco.id),
+  categoriaId: integer('categoria_id').references(() => categorias.id),
+  fechaAprobacion: timestamp('fecha_aprobacion'),
+  fechaFacturacion: timestamp('fecha_facturacion'),
+  movimientoId: integer('movimiento_id').references(() => movimientos.id),
+  subtotal: numeric('subtotal', { precision: 15, scale: 2 }).notNull().default('0'),
+  iva: numeric('iva', { precision: 15, scale: 2 }).notNull().default('0'),
+  total: numeric('total', { precision: 15, scale: 2 }).notNull().default('0'),
+  notas: text('notas'),
+  creadoPor: integer('creado_por').notNull().references(() => usuarios.id),
+  aprobadoPor: integer('aprobado_por').references(() => usuarios.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => {
+  return {
+    folioUq: uniqueIndex('uq_cotizaciones_folio').on(table.folio),
+    negocioIdIdx: index('idx_cotizaciones_negocio_id').on(table.negocioId),
+    estadoIdx: index('idx_cotizaciones_estado').on(table.estado),
+    fechaIdx: index('idx_cotizaciones_fecha').on(table.fecha),
+    creadoPorIdx: index('idx_cotizaciones_creado_por').on(table.creadoPor),
+  };
+});
+
+export const cotizacionItems = pgTable('cotizacion_items', {
+  id: serial('id').primaryKey(),
+  cotizacionId: integer('cotizacion_id').notNull().references(() => cotizaciones.id, { onDelete: 'cascade' }),
+  orden: integer('orden').notNull(),
+  descripcion: text('descripcion').notNull(),
+  cantidad: numeric('cantidad', { precision: 10, scale: 4 }),
+  unidadMedida: varchar('unidad_medida', { length: 50 }),
+  precioUnitario: numeric('precio_unitario', { precision: 15, scale: 2 }),
+  importe: numeric('importe', { precision: 15, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => {
+  return {
+    cotizacionIdIdx: index('idx_cotizacion_items_cotizacion_id').on(table.cotizacionId),
   };
 });
 

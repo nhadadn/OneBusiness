@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -105,6 +106,7 @@ export function Sidebar() {
       title: 'Operaciones',
       items: [
         { label: 'Movimientos', href: '/movimientos', icon: Banknote },
+        { label: 'Cotizaciones', href: '/cotizaciones', icon: ClipboardList },
         { label: 'Por aprobar', href: '/movimientos/aprobacion', icon: Timer, showBadge: true },
       ],
     },

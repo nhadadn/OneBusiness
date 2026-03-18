@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { authenticateRequest, unauthorizedResponse } from '@/middleware/auth-middleware';
@@ -42,15 +42,38 @@ function handleServiceError(error: unknown): NextResponse {
     const status = error.code === 'ACCESO_DENEGADO' ? 403 : 400;
     return NextResponse.json({ success: false, error: error.message }, { status });
   }
-  const message = (error as Error).message || 'Error interno';
+  const rawMessage = (error as Error).message || 'Error interno';
+  const anyError = error as {
+    message?: string;
+    cause?: { code?: string; message?: string };
+  };
+
+  const dbCode = typeof anyError?.cause?.code === 'string' ? anyError.cause.code : undefined;
+  const dbMessage = typeof anyError?.cause?.message === 'string' ? anyError.cause.message : undefined;
+  const isFailedQuery = typeof anyError?.message === 'string' && anyError.message.startsWith('Failed query:');
+
+  if (isFailedQuery) {
+    console.error('DB query failed', { dbCode, dbMessage });
+    const isProd = process.env.NODE_ENV === 'production';
+    return NextResponse.json(
+      {
+        success: false,
+        error: isProd ? 'Error interno' : 'Error de base de datos',
+        ...(isProd ? {} : { dbCode, dbMessage }),
+      },
+      { status: 500 }
+    );
+  }
+
+  const message = rawMessage;
   if (message.includes('no encontrado') || message.includes('not found')) {
     return NextResponse.json({ success: false, error: message }, { status: 404 });
   }
+  if (message.startsWith('Solo se pueden')) {
+    return NextResponse.json({ success: false, error: message }, { status: 409 });
+  }
   if (message.includes('Solo') || message.includes('permisos') || message.includes('creador')) {
     return NextResponse.json({ success: false, error: message }, { status: 403 });
-  }
-  if (message.includes('Solo se pueden') || message.includes('estado')) {
-    return NextResponse.json({ success: false, error: message }, { status: 409 });
   }
   return NextResponse.json({ success: false, error: message }, { status: 400 });
 }
@@ -89,7 +112,16 @@ export async function GET(request: Request) {
     }
 
     if (!negocioId) {
-      return NextResponse.json({ success: true, data: { items: [], total: 0, page: parsed.page ?? 1, limit: parsed.limit ?? 50 }, tenant });
+      const page = parsed.page ?? 1;
+      const limit = parsed.limit ?? 50;
+      return NextResponse.json(
+        {
+          success: true,
+          data: { items: [], movimientos: [], total: 0, page, limit, totalPages: 0 },
+          tenant,
+        },
+        { status: 200 }
+      );
     }
 
     const filtros = {
@@ -105,7 +137,12 @@ export async function GET(request: Request) {
     };
 
     const movimientos = await movimientoService.listar(filtros);
-    return NextResponse.json({ success: true, data: movimientos, tenant });
+    const totalPages = movimientos.limit > 0 ? Math.ceil(movimientos.total / movimientos.limit) : 0;
+    return NextResponse.json({
+      success: true,
+      data: { ...movimientos, movimientos: movimientos.items, totalPages },
+      tenant,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ success: false, error: 'Datos inválidos', details: error.issues }, { status: 400 });

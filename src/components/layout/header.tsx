@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { ArrowLeftRight, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useApiClient } from '@/hooks/use-api-client';
+import { useAuth } from '@/hooks/use-auth';
 
 type NegocioListItem = {
   id: number;
@@ -22,6 +23,7 @@ export type HeaderProps = {
   negocioId: number | null;
   onNegocioChange: (negocioId: number) => void;
   onNewMovimiento: () => void;
+  onNewTraspaso: () => void;
   isNewMovimientoOpen: boolean;
   onNewMovimientoOpenChange: (open: boolean) => void;
 };
@@ -49,9 +51,10 @@ function getPageTitle(pathname: string) {
   return 'OneBusiness';
 }
 
-export function Header({ negocioId, onNegocioChange, onNewMovimiento }: HeaderProps) {
+export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTraspaso }: HeaderProps) {
   const pathname = usePathname();
   const { apiFetch } = useApiClient();
+  const { user } = useAuth();
 
   const [negocios, setNegocios] = React.useState<NegocioListItem[]>([]);
 
@@ -91,9 +94,11 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento }: HeaderPr
     }
 
     localStorage.setItem('lastNegocioId', String(nextId));
+    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
   }, [negocios, negocioId, onNegocioChange]);
 
   const showNewMovimiento = pathname === '/dashboard' || pathname === '/movimientos';
+  const canWrite = user?.rol !== 'Externo';
 
   return (
     <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-6">
@@ -110,6 +115,7 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento }: HeaderPr
               if (!Number.isFinite(nextId)) return;
               onNegocioChange(nextId);
               localStorage.setItem('lastNegocioId', String(nextId));
+              window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
             }}
           >
             <SelectTrigger className="bg-background border-border">
@@ -126,16 +132,24 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento }: HeaderPr
         </div>
       ) : null}
 
-      {showNewMovimiento ? (
-        <Button
-          variant="ghost"
-          onClick={onNewMovimiento}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-        >
-          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-          <span className="hidden sm:inline">Nuevo movimiento</span>
-          <span className="sm:hidden">Nuevo</span>
-        </Button>
+      {showNewMovimiento && canWrite ? (
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={onNewTraspaso}>
+            <ArrowLeftRight className="mr-2 h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Nuevo traspaso</span>
+            <span className="sm:hidden">Traspaso</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={onNewMovimiento}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+          >
+            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Nuevo movimiento</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        </div>
       ) : null}
     </header>
   );

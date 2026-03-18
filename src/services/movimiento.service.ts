@@ -3,7 +3,7 @@ import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit-logger';
-import { cuentasBanco, movimientos, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
+import { cuentasBanco, movimientos, negocios, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { EmailService } from '@/services/email.service';
 import type {
   AprobarMovimientoInput,
@@ -79,6 +79,7 @@ export class MovimientoService {
         tipo: movimientos.tipo,
         monto: movimientos.monto,
         estado: movimientos.estado,
+        traspasoRefId: movimientos.traspasoRefId,
         version: movimientos.version,
         activo: movimientos.activo,
         createdAt: movimientos.createdAt,
@@ -446,6 +447,225 @@ export class MovimientoService {
       throw new Error('No se pudo eliminar movimiento');
     }
     return eliminado;
+  }
+
+  private parseNumeric(value: unknown): number | null {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  async crearTraspasoBancario(input: {
+    negocioId: number;
+    cuentaOrigenId: number;
+    cuentaDestinoId: number;
+    monto: number;
+    concepto: string;
+    fecha: string;
+    creadoPor: number;
+  }) {
+    const created = await db.transaction(async (tx) => {
+      const cuentas = await tx
+        .select({ id: cuentasBanco.id })
+        .from(cuentasBanco)
+        .where(and(eq(cuentasBanco.negocioId, input.negocioId), inArray(cuentasBanco.id, [input.cuentaOrigenId, input.cuentaDestinoId])))
+        .limit(2);
+
+      if (cuentas.length !== 2) {
+        throw new Error('Cuentas inválidas para el negocio');
+      }
+
+      const [salida] = await tx
+        .insert(movimientos)
+        .values({
+          negocioId: input.negocioId,
+          centroCostoId: null,
+          tipo: 'EGRESO',
+          fecha: input.fecha,
+          concepto: input.concepto,
+          tercero: null,
+          monto: input.monto.toString(),
+          cuentaBancoId: input.cuentaOrigenId,
+          creadoPor: input.creadoPor,
+          estado: 'PENDIENTE',
+          version: 1,
+        })
+        .returning();
+
+      if (!salida) {
+        throw new Error('No se pudo crear movimiento de salida');
+      }
+
+      const [entrada] = await tx
+        .insert(movimientos)
+        .values({
+          negocioId: input.negocioId,
+          centroCostoId: null,
+          tipo: 'INGRESO',
+          fecha: input.fecha,
+          concepto: input.concepto,
+          tercero: null,
+          monto: input.monto.toString(),
+          cuentaBancoId: input.cuentaDestinoId,
+          traspasoRefId: salida.id,
+          creadoPor: input.creadoPor,
+          estado: 'PENDIENTE',
+          version: 1,
+        })
+        .returning();
+
+      if (!entrada) {
+        throw new Error('No se pudo crear movimiento de entrada');
+      }
+
+      const [salidaVinculada] = await tx
+        .update(movimientos)
+        .set({ traspasoRefId: entrada.id, updatedAt: new Date() })
+        .where(eq(movimientos.id, salida.id))
+        .returning();
+
+      if (!salidaVinculada) {
+        throw new Error('No se pudo vincular movimiento de salida');
+      }
+
+      await this.notificarNuevoMovimiento(salidaVinculada);
+      await this.notificarNuevoMovimiento(entrada);
+
+      return { movimientoOrigen: salidaVinculada, movimientoDestino: entrada };
+    });
+
+    void auditLog({
+      evento: 'TRASPASO_CREADO',
+      exitoso: true,
+      userId: input.creadoPor,
+      negocioId: input.negocioId,
+      recurso: '/api/traspasos',
+      recursoId: created.movimientoOrigen.id,
+      detalles: {
+        cuentaOrigenId: input.cuentaOrigenId,
+        cuentaDestinoId: input.cuentaDestinoId,
+        monto: input.monto,
+        movimientoOrigenId: created.movimientoOrigen.id,
+        movimientoDestinoId: created.movimientoDestino.id,
+      },
+    });
+
+    return created;
+  }
+
+  private calcularSemaforo(
+    balance: number,
+    umbralAlerta: number | null,
+    umbralCritico: number | null
+  ): 'verde' | 'amarillo' | 'rojo' {
+    if (umbralAlerta === null && umbralCritico === null) return 'verde';
+    if (balance < 0) return 'rojo';
+    if (umbralCritico !== null && balance < umbralCritico) return 'rojo';
+    if (umbralAlerta !== null && balance < umbralAlerta && (umbralCritico === null || balance >= umbralCritico)) {
+      return 'amarillo';
+    }
+    return 'verde';
+  }
+
+  async obtenerResumenFinanciero(input: { negocioId: number; fechaDesde: string; fechaHasta: string }) {
+    const [row] = await db
+      .select({
+        negocioId: negocios.id,
+        nombre: negocios.nombre,
+        umbralAlerta: negocios.umbralAlerta,
+        umbralCritico: negocios.umbralCritico,
+        totalIngresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        totalEgresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        cantidadMovimientos: sql<number>`COALESCE(COUNT(${movimientos.id}), 0)`,
+        cantidadPendientes: sql<number>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'PENDIENTE' THEN 1 ELSE 0 END), 0)`,
+      })
+      .from(negocios)
+      .leftJoin(
+        movimientos,
+        and(
+          eq(movimientos.negocioId, negocios.id),
+          eq(movimientos.activo, true),
+          gte(movimientos.fecha, input.fechaDesde),
+          lte(movimientos.fecha, input.fechaHasta)
+        )
+      )
+      .where(eq(negocios.id, input.negocioId))
+      .groupBy(negocios.id, negocios.nombre, negocios.umbralAlerta, negocios.umbralCritico)
+      .limit(1);
+
+    if (!row) return null;
+
+    const totalIngresos = this.parseNumeric(row.totalIngresos) ?? 0;
+    const totalEgresos = this.parseNumeric(row.totalEgresos) ?? 0;
+    const balance = totalIngresos - totalEgresos;
+
+    const umbralAlerta = this.parseNumeric(row.umbralAlerta);
+    const umbralCritico = this.parseNumeric(row.umbralCritico);
+
+    return {
+      negocioId: row.negocioId,
+      nombre: row.nombre,
+      totalIngresos,
+      totalEgresos,
+      balance,
+      cantidadMovimientos: Number(row.cantidadMovimientos ?? 0),
+      cantidadPendientes: Number(row.cantidadPendientes ?? 0),
+      semaforo: this.calcularSemaforo(balance, umbralAlerta, umbralCritico),
+    };
+  }
+
+  async obtenerResumenesFinancierosPorNegocio(input: { negocioIds?: number[]; fechaDesde: string; fechaHasta: string }) {
+    const whereNegocios =
+      Array.isArray(input.negocioIds) && input.negocioIds.length > 0 ? inArray(negocios.id, input.negocioIds) : undefined;
+
+    const rows = await db
+      .select({
+        negocioId: negocios.id,
+        nombre: negocios.nombre,
+        umbralAlerta: negocios.umbralAlerta,
+        umbralCritico: negocios.umbralCritico,
+        totalIngresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        totalEgresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        cantidadMovimientos: sql<number>`COALESCE(COUNT(${movimientos.id}), 0)`,
+        cantidadPendientes: sql<number>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.activo} = true AND ${movimientos.estado} = 'PENDIENTE' THEN 1 ELSE 0 END), 0)`,
+      })
+      .from(negocios)
+      .leftJoin(
+        movimientos,
+        and(
+          eq(movimientos.negocioId, negocios.id),
+          eq(movimientos.activo, true),
+          gte(movimientos.fecha, input.fechaDesde),
+          lte(movimientos.fecha, input.fechaHasta)
+        )
+      )
+      .where(whereNegocios)
+      .groupBy(negocios.id, negocios.nombre, negocios.umbralAlerta, negocios.umbralCritico)
+      .orderBy(negocios.id);
+
+    return rows.map((row) => {
+      const totalIngresos = this.parseNumeric(row.totalIngresos) ?? 0;
+      const totalEgresos = this.parseNumeric(row.totalEgresos) ?? 0;
+      const balance = totalIngresos - totalEgresos;
+
+      const umbralAlerta = this.parseNumeric(row.umbralAlerta);
+      const umbralCritico = this.parseNumeric(row.umbralCritico);
+
+      return {
+        negocioId: row.negocioId,
+        nombre: row.nombre,
+        totalIngresos,
+        totalEgresos,
+        balance,
+        cantidadMovimientos: Number(row.cantidadMovimientos ?? 0),
+        cantidadPendientes: Number(row.cantidadPendientes ?? 0),
+        semaforo: this.calcularSemaforo(balance, umbralAlerta, umbralCritico),
+      };
+    });
   }
 
   async contarPendientes(negocioIds: number[]) {

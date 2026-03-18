@@ -2,9 +2,12 @@
 
 import * as React from 'react';
 
+import { toast } from 'sonner';
+
 import { Header } from '@/components/layout/header';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MovimientoForm } from '@/components/movimientos/movimiento-form';
+import { TraspasoForm } from '@/components/movimientos/traspaso-form';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useApiClient } from '@/hooks/use-api-client';
 
@@ -15,6 +18,7 @@ export type DashboardShellProps = {
 export function DashboardShell({ children }: DashboardShellProps) {
   const [negocioId, setNegocioId] = React.useState<number | null>(null);
   const [isNewMovimientoOpen, setIsNewMovimientoOpen] = React.useState(false);
+  const [isNewTraspasoOpen, setIsNewTraspasoOpen] = React.useState(false);
   const { apiFetch } = useApiClient();
   const [negocioNombre, setNegocioNombre] = React.useState<string | null>(null);
 
@@ -29,16 +33,38 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const handleNegocioChange = React.useCallback((nextId: number) => {
     setNegocioId(nextId);
     localStorage.setItem('lastNegocioId', String(nextId));
+    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
   }, []);
+
+  React.useEffect(() => {
+    const handler = (event: Event) => {
+      const raw = (event as CustomEvent).detail as { negocioId?: unknown } | undefined;
+      const parsed = typeof raw?.negocioId === 'number' ? raw.negocioId : Number(raw?.negocioId);
+      if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) return;
+      handleNegocioChange(parsed);
+    };
+    window.addEventListener('onebusiness:negocio-select', handler as EventListener);
+    return () => window.removeEventListener('onebusiness:negocio-select', handler as EventListener);
+  }, [handleNegocioChange]);
 
   const handleNewMovimiento = React.useCallback(() => {
     setIsNewMovimientoOpen(true);
+  }, []);
+
+  const handleNewTraspaso = React.useCallback(() => {
+    setIsNewTraspasoOpen(true);
   }, []);
 
   React.useEffect(() => {
     const handler = () => setIsNewMovimientoOpen(true);
     window.addEventListener('onebusiness:new-movimiento-open', handler as EventListener);
     return () => window.removeEventListener('onebusiness:new-movimiento-open', handler as EventListener);
+  }, []);
+
+  React.useEffect(() => {
+    const handler = () => setIsNewTraspasoOpen(true);
+    window.addEventListener('onebusiness:new-traspaso-open', handler as EventListener);
+    return () => window.removeEventListener('onebusiness:new-traspaso-open', handler as EventListener);
   }, []);
 
   React.useEffect(() => {
@@ -73,6 +99,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           negocioId={negocioId}
           onNegocioChange={handleNegocioChange}
           onNewMovimiento={handleNewMovimiento}
+          onNewTraspaso={handleNewTraspaso}
           isNewMovimientoOpen={isNewMovimientoOpen}
           onNewMovimientoOpenChange={setIsNewMovimientoOpen}
         />
@@ -96,6 +123,32 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 setIsNewMovimientoOpen(false);
                 window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
                 window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+              }}
+              onSuccessAndNew={() => {
+                window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
+                window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+                toast.success('Movimiento guardado. Agrega el siguiente.', { duration: 2500 });
+              }}
+              onCancel={() => setIsNewMovimientoOpen(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={isNewTraspasoOpen} onOpenChange={setIsNewTraspasoOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Nuevo traspaso</SheetTitle>
+            {typeof negocioId === 'number' ? (
+              <SheetDescription>{negocioNombre ? `Negocio: ${negocioNombre}` : `Negocio: ${negocioId}`}</SheetDescription>
+            ) : null}
+          </SheetHeader>
+
+          <div className="mt-6">
+            <TraspasoForm
+              negocioId={negocioId}
+              onSuccess={() => {
+                setIsNewTraspasoOpen(false);
               }}
             />
           </div>

@@ -39,3 +39,29 @@ export async function getNegocios(
   return db.select(baseSelect).from(negocios).where(inArray(negocios.id, userContext.negocios));
 }
 
+export async function updateNegocioUmbrales(
+  negocioId: number,
+  input: { umbralAlerta: number | null; umbralCritico: number | null }
+) {
+  const [updated] = await db
+    .update(negocios)
+    .set({
+      umbralAlerta: input.umbralAlerta === null ? null : input.umbralAlerta.toString(),
+      umbralCritico: input.umbralCritico === null ? null : input.umbralCritico.toString(),
+      updatedAt: new Date(),
+    })
+    .where(eq(negocios.id, negocioId))
+    .returning({
+      id: negocios.id,
+      nombre: negocios.nombre,
+      rubro: negocios.rubro,
+      modeloIngreso: negocios.modeloIngreso,
+      tieneSocios: negocios.tieneSocios,
+      activo: negocios.activo,
+      umbralAlerta: negocios.umbralAlerta,
+      umbralCritico: negocios.umbralCritico,
+      updatedAt: negocios.updatedAt,
+    });
+
+  return updated ?? null;
+}

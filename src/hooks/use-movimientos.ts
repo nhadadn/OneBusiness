@@ -20,6 +20,7 @@ export type MovimientoListItem = {
   tercero: string | null;
   monto: string;
   estado: EstadoMovimiento;
+  traspasoRefId?: number | null;
   version: number;
   activo: boolean;
   cuentaBanco: { id: number; nombre: string };
@@ -68,6 +69,7 @@ type MovimientosListApiItem = {
   tipo: TipoMovimiento;
   monto: string;
   estado: EstadoMovimiento;
+  traspasoRefId?: number | null;
   version: number;
   activo: boolean;
   createdAt: string;
@@ -119,6 +121,7 @@ function toMovimientoListItem(item: MovimientosListApiItem, fallbackNegocioId: n
     tercero: item.tercero,
     monto: item.monto,
     estado: item.estado,
+    traspasoRefId: item.traspasoRefId ?? null,
     version: item.version,
     activo: item.activo ?? true,
     cuentaBanco: item.cuentaBanco,
