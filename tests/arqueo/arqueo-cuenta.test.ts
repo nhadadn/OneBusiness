@@ -80,8 +80,8 @@ function matchesPredicates(row: Record<string, any>, predicates: Array<{ key: st
   return predicates.every((p) => {
     const val = row[p.key];
     if (p.op === '=') return val === p.value;
-    if (p.op === '<=') return val <= p.value;
-    if (p.op === '>=') return val >= p.value;
+    if (p.op === '<=') return val <= (p.value as any);
+    if (p.op === '>=') return val >= (p.value as any);
     return true;
   });
 }

@@ -1,4 +1,4 @@
-import { and, eq, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db'; 
 import { cuentaNegocio, cuentasBanco, movimientos, negocios } from '@/lib/drizzle';
@@ -39,11 +39,42 @@ export class CuentaBancoService {
   }
 
   async listar(negocioId: number) {
-    return db
-      .select()
+    const cuentas = await db
+      .selectDistinct({
+        id: cuentasBanco.id,
+        nombre: cuentasBanco.nombre,
+        tipo: cuentasBanco.tipo,
+        bancoInstitucion: cuentasBanco.bancoInstitucion,
+        titular: cuentasBanco.titular,
+        negocioId: cuentasBanco.negocioId,
+        esGlobal: cuentasBanco.esGlobal,
+        saldoInicial: cuentasBanco.saldoInicial,
+        saldoReal: cuentasBanco.saldoReal,
+        fechaSaldoReal: cuentasBanco.fechaSaldoReal,
+        activo: cuentasBanco.activo,
+        createdAt: cuentasBanco.createdAt,
+        updatedAt: cuentasBanco.updatedAt,
+      })
       .from(cuentasBanco)
-      .where(and(eq(cuentasBanco.negocioId, negocioId), eq(cuentasBanco.activo, true)))
+      .leftJoin(cuentaNegocio, eq(cuentasBanco.id, cuentaNegocio.cuentaId))
+      .where(
+        and(
+          eq(cuentasBanco.activo, true),
+          sql`${cuentasBanco.negocioId} = ${negocioId} OR ${cuentasBanco.esGlobal} = true OR ${cuentaNegocio.negocioId} = ${negocioId}`
+        )
+      )
       .orderBy(cuentasBanco.nombre);
+
+    const cuentaIds = cuentas.map(c => c.id);
+    let compartidos: Array<{ id: number; cuentaId: number; negocioId: number; fechaAsignacion: Date | null }> = [];
+    if (cuentaIds.length > 0) {
+      compartidos = await db.select().from(cuentaNegocio).where(inArray(cuentaNegocio.cuentaId, cuentaIds));
+    }
+
+    return cuentas.map(c => ({
+      ...c,
+      negociosCompartidos: compartidos.filter(comp => comp.cuentaId === c.id)
+    }));
   }
 
   async obtener(id: number, negocioId?: number) {
@@ -59,32 +90,149 @@ export class CuentaBancoService {
     return cuenta;
   }
 
+  async asignarNegocio(cuentaId: number, negocioId: number) {
+    return await db.transaction(async (tx) => {
+      const [cuenta] = await tx.select().from(cuentasBanco).where(eq(cuentasBanco.id, cuentaId)).limit(1);
+      if (!cuenta) throw new Error('Cuenta no encontrada');
+      if (cuenta.esGlobal) throw new Error('No se pueden asignar negocios a una cuenta global');
+
+      const [negocio] = await tx.select().from(negocios).where(eq(negocios.id, negocioId)).limit(1);
+      if (!negocio) throw new Error('Negocio no encontrado');
+
+      const [existente] = await tx.select().from(cuentaNegocio).where(and(eq(cuentaNegocio.cuentaId, cuentaId), eq(cuentaNegocio.negocioId, negocioId))).limit(1);
+      if (!existente) {
+        await tx.insert(cuentaNegocio).values({ cuentaId, negocioId });
+      }
+
+      const [updated] = await tx.select().from(cuentasBanco).where(eq(cuentasBanco.id, cuentaId)).limit(1);
+      const compartidos = await tx.select().from(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, cuentaId));
+      return { ...updated, negociosCompartidos: compartidos };
+    });
+  }
+
+  async removerNegocio(cuentaId: number, negocioId: number) {
+    return await db.transaction(async (tx) => {
+      const [cuenta] = await tx.select().from(cuentasBanco).where(eq(cuentasBanco.id, cuentaId)).limit(1);
+      if (!cuenta) throw new Error('Cuenta no encontrada');
+
+      const compartidos = await tx.select().from(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, cuentaId));
+      
+      if (!cuenta.esGlobal && cuenta.negocioId === null && compartidos.length === 1 && compartidos[0]?.negocioId === negocioId) {
+        throw new Error('No se puede remover el último negocio de una cuenta no global');
+      }
+
+      await tx.delete(cuentaNegocio).where(and(eq(cuentaNegocio.cuentaId, cuentaId), eq(cuentaNegocio.negocioId, negocioId)));
+
+      const [updated] = await tx.select().from(cuentasBanco).where(eq(cuentasBanco.id, cuentaId)).limit(1);
+      const compartidosFinal = await tx.select().from(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, cuentaId));
+      return { ...updated, negociosCompartidos: compartidosFinal };
+    });
+  }
+
   async crear(data: CreateCuentaBancoInput) {
-    const [cuenta] = await db
-      .insert(cuentasBanco)
-      .values({
-        nombre: data.nombre,
-        tipo: data.tipo,
-        bancoInstitucion: data.bancoInstitucion || null,
-        titular: data.titular || null,
-        negocioId: data.negocioId,
-        saldoInicial: data.saldoInicial?.toString() || '0',
-      })
-      .returning();
-    return cuenta;
+    if (!data.esGlobal && !data.negocioId && (!data.negociosCompartidos || data.negociosCompartidos.length === 0)) {
+      throw new Error('Debe especificar al menos un negocio o marcar la cuenta como global');
+    }
+
+    return await db.transaction(async (tx) => {
+      let negocioIdPrincipal = data.negocioId ?? null;
+      let esGlobal = data.esGlobal ?? false;
+      
+      if (esGlobal) {
+        negocioIdPrincipal = null;
+      } else if (!negocioIdPrincipal && data.negociosCompartidos && data.negociosCompartidos.length > 0) {
+        negocioIdPrincipal = data.negociosCompartidos[0] ?? null;
+      }
+
+      const [cuenta] = await tx
+        .insert(cuentasBanco)
+        .values({
+          nombre: data.nombre,
+          tipo: data.tipo,
+          bancoInstitucion: data.bancoInstitucion || null,
+          titular: data.titular || null,
+          negocioId: negocioIdPrincipal,
+          esGlobal: esGlobal,
+          saldoInicial: data.saldoInicial?.toString() || '0',
+        })
+        .returning();
+
+      if (!cuenta) {
+        throw new Error('Error al crear la cuenta');
+      }
+
+      if (!esGlobal && data.negociosCompartidos && data.negociosCompartidos.length > 0) {
+        const uniqueNegocios = Array.from(new Set(data.negociosCompartidos));
+        const existentes = await tx.select({ id: negocios.id }).from(negocios).where(inArray(negocios.id, uniqueNegocios));
+        if (existentes.length !== uniqueNegocios.length) {
+          throw new Error('Uno o más negocios compartidos no existen');
+        }
+
+        const values = uniqueNegocios.map(nid => ({
+          cuentaId: cuenta.id,
+          negocioId: nid
+        }));
+        await tx.insert(cuentaNegocio).values(values);
+      }
+
+      return cuenta;
+    });
   }
 
   async actualizar(id: number, data: UpdateCuentaBancoInput) {
-    const [cuenta] = await db
-      .update(cuentasBanco)
-      .set({
-        ...data,
-        saldoReal: data.saldoReal?.toString(),
-        updatedAt: new Date(),
-      })
-      .where(eq(cuentasBanco.id, id))
-      .returning();
-    return cuenta;
+    return await db.transaction(async (tx) => {
+      const [existing] = await tx.select().from(cuentasBanco).where(eq(cuentasBanco.id, id)).limit(1);
+      if (!existing) throw new Error('Cuenta no encontrada');
+
+      const esGlobalNuevo = data.esGlobal ?? existing.esGlobal;
+      let negocioIdNuevo = data.negocioId !== undefined ? data.negocioId : existing.negocioId;
+      
+      if (esGlobalNuevo) {
+        negocioIdNuevo = null;
+      }
+
+      const [cuenta] = await tx
+        .update(cuentasBanco)
+        .set({
+          ...data,
+          negocioId: negocioIdNuevo,
+          esGlobal: esGlobalNuevo,
+          saldoReal: data.saldoReal?.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(cuentasBanco.id, id))
+        .returning();
+
+      if (!cuenta) {
+        throw new Error('Error al actualizar la cuenta');
+      }
+
+      if (esGlobalNuevo) {
+        await tx.delete(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, id));
+      } else if (data.negociosCompartidos !== undefined) {
+        const currentCompartidos = await tx.select({ negocioId: cuentaNegocio.negocioId }).from(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, id));
+        const currentIds = currentCompartidos.map(c => c.negocioId);
+        const newIds = Array.from(new Set(data.negociosCompartidos));
+
+        const toDelete = currentIds.filter(nid => !newIds.includes(nid));
+        const toInsert = newIds.filter(nid => !currentIds.includes(nid));
+
+        if (toDelete.length > 0) {
+          await tx.delete(cuentaNegocio).where(and(eq(cuentaNegocio.cuentaId, id), inArray(cuentaNegocio.negocioId, toDelete)));
+        }
+
+        if (toInsert.length > 0) {
+          const existentes = await tx.select({ id: negocios.id }).from(negocios).where(inArray(negocios.id, toInsert));
+          if (existentes.length !== toInsert.length) {
+            throw new Error('Uno o más negocios compartidos no existen');
+          }
+          const values = toInsert.map(nid => ({ cuentaId: id, negocioId: nid }));
+          await tx.insert(cuentaNegocio).values(values);
+        }
+      }
+
+      return cuenta;
+    });
   }
 
   async actualizarSaldoReal(id: number, saldoReal: number) {

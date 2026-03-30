@@ -18,6 +18,9 @@ const updateCuentaBancoSchema = z
     tipo: z.enum(['EFECTIVO', 'BANCARIA', 'CAJA_CHICA']).optional(),
     bancoInstitucion: z.string().optional(),
     titular: z.string().optional(),
+    negocioId: z.number().positive().optional().nullable(),
+    esGlobal: z.boolean().optional(),
+    negociosCompartidos: z.array(z.number().positive()).optional(),
   })
   .refine((obj) => Object.keys(obj).length > 0, { message: 'Debe enviar al menos un campo a actualizar' });
 
@@ -111,6 +114,23 @@ export async function PATCH(request: Request, context: { params: { id: string } 
 
     const body: unknown = await request.json();
     const validated = updateCuentaBancoSchema.parse(body);
+
+    if (validated.esGlobal && auth.user!.rol !== 'Dueño') {
+      return forbiddenResponse('Solo el Dueño puede hacer una cuenta global');
+    }
+
+    if (auth.user!.rol !== 'Dueño') {
+      if (validated.negocioId != null && !auth.user!.negocios.includes(validated.negocioId)) {
+        return forbiddenResponse('No tienes acceso al negocio principal');
+      }
+      if (validated.negociosCompartidos) {
+        for (const nId of validated.negociosCompartidos) {
+          if (!auth.user!.negocios.includes(nId)) {
+            return forbiddenResponse('No tienes acceso a uno o más negocios compartidos');
+          }
+        }
+      }
+    }
 
     const updated = await cuentaBancoService.actualizar(cuentaId, validated);
     return NextResponse.json({ success: true, data: updated });
