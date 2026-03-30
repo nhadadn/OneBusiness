@@ -11,6 +11,7 @@ import {
   ClipboardList,
   FileText,
   Landmark,
+  Layers,
   LayoutDashboard,
   LogOut,
   Tags,
@@ -65,6 +66,7 @@ export function Sidebar() {
 
   const canSeeUsuarios = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const canSeeArqueo = user?.rol === 'Dueño' || user?.rol === 'Admin';
+  const canSeeConsolidado = user?.rol === 'Dueño';
 
   React.useEffect(() => {
     let active = true;
@@ -101,6 +103,7 @@ export function Sidebar() {
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Negocios', href: '/negocios', icon: Building2 },
+        { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
         { label: 'Reportes', href: '/reportes', icon: FileText },
       ],
     },
