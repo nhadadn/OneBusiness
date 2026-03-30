@@ -71,6 +71,13 @@
       "when": 1773600000000,
       "tag": "0008_semaforo_umbrales_y_traspaso_id",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774900022282,
+      "tag": "0010_fuzzy_lyja",
+      "breakpoints": true
     }
   ]
 }

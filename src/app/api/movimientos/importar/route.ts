@@ -189,7 +189,7 @@ export async function POST(request: Request) {
       .where(inArray(cuentasBanco.nombre, cuentaNames));
 
     const negocioByNombre = new Map<string, number>(negociosFound.map((n) => [n.nombre, n.id]));
-    const cuentasByNombre = new Map<string, Array<{ id: number; negocioId: number }>>();
+    const cuentasByNombre = new Map<string, Array<{ id: number; negocioId: number | null }>>();
     for (const c of cuentasFound) {
       const list = cuentasByNombre.get(c.nombre) ?? [];
       list.push({ id: c.id, negocioId: c.negocioId });

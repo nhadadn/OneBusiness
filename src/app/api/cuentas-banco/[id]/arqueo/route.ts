@@ -87,7 +87,7 @@ export async function GET(request: Request, context: { params: { id: string } })
 
     const arqueo = await cuentaBancoService.calcularArqueoCuenta(cuentaBancoId, fechaCorte);
 
-    if (auth.user!.rol !== 'Dueño' && !auth.user!.negocios.includes(arqueo.negocioId)) {
+    if (auth.user!.rol !== 'Dueño' && arqueo.negocioId !== null && !auth.user!.negocios.includes(arqueo.negocioId)) {
       throw new TenantError('ACCESO_DENEGADO: No tienes acceso a este negocio', 'ACCESO_DENEGADO');
     }
 

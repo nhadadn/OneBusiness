@@ -62,7 +62,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
       return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
     }
 
-    if (auth.user!.rol !== 'Dueño' && !auth.user!.negocios.includes(existing.negocioId)) {
+    if (auth.user!.rol !== 'Dueño' && existing.negocioId !== null && !auth.user!.negocios.includes(existing.negocioId)) {
       throw new TenantError('ACCESO_DENEGADO: No tienes acceso a este negocio', 'ACCESO_DENEGADO');
     }
 

@@ -1,16 +1,25 @@
 export type TipoCuenta = 'EFECTIVO' | 'BANCARIA' | 'CAJA_CHICA';
 
+export interface CuentaNegocio {
+  id: number;
+  cuentaId: number;
+  negocioId: number;
+  fechaAsignacion: string;
+}
+
 export interface CuentaBanco {
   id: number;
   nombre: string;
   tipo: TipoCuenta;
   bancoInstitucion: string | null;
   titular: string | null;
-  negocioId: number;
+  negocioId: number | null;
+  esGlobal: boolean;
   saldoInicial: string;
   saldoReal: string | null;
   fechaSaldoReal: Date | null;
   activo: boolean;
+  negociosCompartidos?: CuentaNegocio[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +29,9 @@ export interface CreateCuentaBancoInput {
   tipo: TipoCuenta;
   bancoInstitucion?: string;
   titular?: string;
-  negocioId: number;
+  negocioId?: number | null;
+  esGlobal?: boolean;
+  negociosCompartidos?: number[];
   saldoInicial?: number;
 }
 
@@ -29,6 +40,9 @@ export interface UpdateCuentaBancoInput {
   tipo?: TipoCuenta;
   bancoInstitucion?: string;
   titular?: string;
+  negocioId?: number | null;
+  esGlobal?: boolean;
+  negociosCompartidos?: number[];
   saldoReal?: number;
   activo?: boolean;
 }
@@ -48,7 +62,7 @@ export type EstadoArqueo = 'CUADRADO' | 'SOBRANTE' | 'FALTANTE' | 'SIN_SALDO_REA
 
 export type ArqueoCuentaBanco = {
   cuentaBancoId: number;
-  negocioId: number;
+  negocioId: number | null;
   fechaCorte: string;
   saldoInicial: number;
   ingreso: number;

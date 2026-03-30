@@ -153,7 +153,8 @@ export const cuentasBanco = pgTable('cuentas_banco', {
   tipo: tipoCuentaEnum('tipo').notNull(),
   bancoInstitucion: varchar('banco_institucion', { length: 50 }),
   titular: varchar('titular', { length: 100 }),
-  negocioId: integer('negocio_id').notNull().references(() => negocios.id),
+  negocioId: integer('negocio_id').references(() => negocios.id),
+  esGlobal: boolean('es_global').notNull().default(false),
   saldoInicial: numeric('saldo_inicial', { precision: 15, scale: 2 }).notNull().default('0'),
   saldoReal: numeric('saldo_real', { precision: 15, scale: 2 }),
   fechaSaldoReal: timestamp('fecha_saldo_real'),
@@ -165,6 +166,19 @@ export const cuentasBanco = pgTable('cuentas_banco', {
     negocioIdIdx: index('idx_cuentas_banco_negocio_id').on(table.negocioId),
     tipoIdx: index('idx_cuentas_banco_tipo').on(table.tipo),
     activoIdx: index('idx_cuentas_banco_activo').on(table.activo),
+  };
+});
+
+export const cuentaNegocio = pgTable('cuenta_negocio', {
+  id: serial('id').primaryKey(),
+  cuentaId: integer('cuenta_id').notNull().references(() => cuentasBanco.id, { onDelete: 'cascade' }),
+  negocioId: integer('negocio_id').notNull().references(() => negocios.id, { onDelete: 'cascade' }),
+  fechaAsignacion: timestamp('fecha_asignacion').defaultNow(),
+}, (table) => {
+  return {
+    cuentaIdx: index('idx_cuenta_negocio_cuenta').on(table.cuentaId),
+    negocioIdx: index('idx_cuenta_negocio_negocio').on(table.negocioId),
+    uniqueCuentaNegocio: uniqueIndex('uq_cuenta_negocio').on(table.cuentaId, table.negocioId),
   };
 });
 
@@ -261,7 +275,19 @@ export const cuentasBancoRelations = relations(cuentasBanco, ({ one, many }) => 
     fields: [cuentasBanco.negocioId],
     references: [negocios.id],
   }),
+  negociosCompartidos: many(cuentaNegocio),
   movimientos: many(movimientos),
+}));
+
+export const cuentaNegocioRelations = relations(cuentaNegocio, ({ one }) => ({
+  cuenta: one(cuentasBanco, {
+    fields: [cuentaNegocio.cuentaId],
+    references: [cuentasBanco.id],
+  }),
+  negocio: one(negocios, {
+    fields: [cuentaNegocio.negocioId],
+    references: [negocios.id],
+  }),
 }));
 
 export const movimientosRelations = relations(movimientos, ({ one }) => ({
