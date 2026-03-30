@@ -279,7 +279,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
       canEnviar: data.estado === 'BORRADOR' && canEdit,
       canAprobar: data.estado === 'ENVIADA' && canManage,
       canFacturar: data.estado === 'APROBADA' && canManage,
-      canCancelar: (data.estado === 'ENVIADA' || data.estado === 'APROBADA') && canManage,
+      canCancelar: (data.estado === 'BORRADOR' || data.estado === 'ENVIADA' || data.estado === 'APROBADA') && canManage,
     };
   }, [canEdit, canManage, data]);
 
