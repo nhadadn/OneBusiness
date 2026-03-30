@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { SaldosBancoCard } from '@/components/dashboard/saldos-banco-card';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useApiClient } from '@/hooks/use-api-client';
@@ -470,6 +471,8 @@ export default function DashboardPage() {
             />
           </div>
 
+          <SaldosBancoCard negocioId={selectedNegocioId} />
+
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
               Período: {periodRange.fechaDesde} → {periodRange.fechaHasta}
@@ -641,6 +644,8 @@ export default function DashboardPage() {
           />
           <MetricCard title="Movimientos recientes" value={`${operativoMovs.length}`} />
         </div>
+
+        <SaldosBancoCard negocioId={selectedNegocioId} />
 
         {isAdmin ? (
           <div className="flex justify-end">
