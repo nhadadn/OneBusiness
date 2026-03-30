@@ -85,11 +85,16 @@ export async function GET(request: Request, context: { params: { id: string } })
 
     const fechaCorte = parsedQuery.fechaCorte ?? formatLocalDateYYYYMMDD(new Date());
 
-    const arqueo = await cuentaBancoService.calcularArqueoCuenta(cuentaBancoId, fechaCorte);
-
-    if (auth.user!.rol !== 'Dueño' && arqueo.negocioId !== null && !auth.user!.negocios.includes(arqueo.negocioId)) {
-      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a este negocio', 'ACCESO_DENEGADO');
+    const cuenta = await cuentaBancoService.obtener(cuentaBancoId);
+    if (!cuenta || !cuenta.activo) {
+      return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
     }
+
+    if (auth.user!.rol !== 'Dueño' && !cuentaBancoService.usuarioTieneAccesoACuenta(cuenta, auth.user!.negocios)) {
+      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a esta cuenta', 'ACCESO_DENEGADO');
+    }
+
+    const arqueo = await cuentaBancoService.calcularArqueoCuenta(cuentaBancoId, fechaCorte);
 
     return NextResponse.json({ success: true, data: arqueo });
   } catch (error) {

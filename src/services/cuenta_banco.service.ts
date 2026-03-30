@@ -1,7 +1,7 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 
-import { db } from '@/lib/db';
-import { cuentasBanco, movimientos, negocios } from '@/lib/drizzle';
+import { db } from '@/lib/db'; 
+import { cuentaNegocio, cuentasBanco, movimientos, negocios } from '@/lib/drizzle';
 import type {
   ArqueoCuentaBanco,
   ArqueoNegocio,
@@ -24,6 +24,20 @@ export class CuentaBancoService {
     return diferencia > 0.01 ? 'SOBRANTE' : 'FALTANTE';
   }
 
+  public usuarioTieneAccesoACuenta(
+    cuenta: {
+      esGlobal: boolean;
+      negocioId: number | null;
+      negociosCompartidos?: { negocioId: number }[];
+    },
+    userNegocios: number[]
+  ): boolean {
+    if (cuenta.esGlobal) return true;
+    if (cuenta.negocioId !== null && userNegocios.includes(cuenta.negocioId)) return true;
+    if (cuenta.negociosCompartidos && cuenta.negociosCompartidos.some((nc) => userNegocios.includes(nc.negocioId))) return true;
+    return false;
+  }
+
   async listar(negocioId: number) {
     return db
       .select()
@@ -35,9 +49,13 @@ export class CuentaBancoService {
   async obtener(id: number, negocioId?: number) {
     const conditions = [eq(cuentasBanco.id, id)];
     if (negocioId) {
-      conditions.push(eq(cuentasBanco.negocioId, negocioId));
+      conditions.push(eq(cuentasBanco.negocioId, negocioId)); 
     }
     const [cuenta] = await db.select().from(cuentasBanco).where(and(...conditions)).limit(1);
+    if (cuenta) {
+      const compartidos = await db.select().from(cuentaNegocio).where(eq(cuentaNegocio.cuentaId, cuenta.id));
+      return { ...cuenta, negociosCompartidos: compartidos };
+    }
     return cuenta;
   }
 

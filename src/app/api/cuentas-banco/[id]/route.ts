@@ -62,13 +62,13 @@ export async function GET(request: Request, context: { params: { id: string } })
     const { id } = paramsSchema.parse(context.params);
 
     const cuentaId = Number.parseInt(id, 10);
-    const cuenta = await cuentaBancoService.obtener(cuentaId, tenant.negocioId ?? undefined);
+    const cuenta = await cuentaBancoService.obtener(cuentaId);
     if (!cuenta || !cuenta.activo) {
       return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
     }
 
-    if (tenant.negocioId !== null && cuenta.negocioId !== tenant.negocioId) {
-      return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
+    if (auth.user!.rol !== 'Dueño' && !cuentaBancoService.usuarioTieneAccesoACuenta(cuenta, auth.user!.negocios)) {
+      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a esta cuenta', 'ACCESO_DENEGADO');
     }
 
     return NextResponse.json({ success: true, data: cuenta, tenant });
@@ -105,8 +105,8 @@ export async function PATCH(request: Request, context: { params: { id: string } 
       return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
     }
 
-    if (auth.user!.rol !== 'Dueño' && existing.negocioId !== null && !auth.user!.negocios.includes(existing.negocioId)) {
-      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a este negocio', 'ACCESO_DENEGADO');
+    if (auth.user!.rol !== 'Dueño' && !cuentaBancoService.usuarioTieneAccesoACuenta(existing, auth.user!.negocios)) {
+      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a esta cuenta', 'ACCESO_DENEGADO');
     }
 
     const body: unknown = await request.json();
@@ -147,8 +147,8 @@ export async function DELETE(request: Request, context: { params: { id: string }
       return NextResponse.json({ success: false, error: 'Cuenta no encontrada' }, { status: 404 });
     }
 
-    if (auth.user!.rol !== 'Dueño' && existing.negocioId !== null && !auth.user!.negocios.includes(existing.negocioId)) {
-      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a este negocio', 'ACCESO_DENEGADO');
+    if (auth.user!.rol !== 'Dueño' && !cuentaBancoService.usuarioTieneAccesoACuenta(existing, auth.user!.negocios)) {
+      throw new TenantError('ACCESO_DENEGADO: No tienes acceso a esta cuenta', 'ACCESO_DENEGADO');
     }
 
     const deleted = await cuentaBancoService.eliminar(cuentaId);
