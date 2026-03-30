@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ClipboardList,
   FileText,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Tags,
@@ -63,6 +64,7 @@ export function Sidebar() {
   const [refreshTick, setRefreshTick] = React.useState(0);
 
   const canSeeUsuarios = user?.rol === 'Dueño' || user?.rol === 'Admin';
+  const canSeeArqueo = user?.rol === 'Dueño' || user?.rol === 'Admin';
 
   React.useEffect(() => {
     let active = true;
@@ -114,6 +116,7 @@ export function Sidebar() {
       title: 'Configuración',
       items: [
         { label: 'Cuentas bancarias', href: '/configuracion/cuentas-banco', icon: Banknote },
+        { label: 'Arqueo', href: '/configuracion/arqueo', icon: Landmark, show: canSeeArqueo },
         { label: 'Categorías', href: '/configuracion/categorias', icon: Tags },
         { label: 'Usuarios', href: '/usuarios', icon: Users, show: canSeeUsuarios },
       ],

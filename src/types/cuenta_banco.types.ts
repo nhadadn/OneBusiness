@@ -43,3 +43,56 @@ export interface SaldoCalculado {
   diferencia: number | null;
   movimientosPendientes: number;
 }
+
+export type EstadoArqueo = 'CUADRADO' | 'SOBRANTE' | 'FALTANTE' | 'SIN_SALDO_REAL';
+
+export type ArqueoCuentaBanco = {
+  cuentaBancoId: number;
+  negocioId: number;
+  fechaCorte: string;
+  saldoInicial: number;
+  ingreso: number;
+  egreso: number;
+  traspasoEntrada: number;
+  traspasoSalida: number;
+  saldoCalculado: number;
+  saldoReal: number | null;
+  fechaSaldoReal: string | null;
+  diferencia: number | null;
+  estadoArqueo: EstadoArqueo;
+  movimientosPendientes: number;
+};
+
+export type ArqueoNegocio = {
+  negocioId: number;
+  fechaCorte: string;
+  cuentas: Array<{
+    cuentaBancoId: number;
+    nombre: string;
+    tipo: TipoCuenta;
+    saldoInicial: number;
+    ingreso: number;
+    egreso: number;
+    traspasoEntrada: number;
+    traspasoSalida: number;
+    saldoCalculado: number;
+    saldoReal: number | null;
+    fechaSaldoReal: string | null;
+    diferencia: number | null;
+    estadoArqueo: EstadoArqueo;
+    movimientosPendientes: number;
+  }>;
+  totales: {
+    saldoInicial: number;
+    ingreso: number;
+    egreso: number;
+    traspasoEntrada: number;
+    traspasoSalida: number;
+    saldoCalculado: number;
+    saldoReal: number | null;
+    diferencia: number | null;
+    estadoArqueo: EstadoArqueo;
+    cuentasSinSaldoReal: number;
+    movimientosPendientes: number;
+  };
+};
