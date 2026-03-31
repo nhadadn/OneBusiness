@@ -1,9 +1,9 @@
 import { alias } from 'drizzle-orm/pg-core';
-import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit-logger';
-import { cuentasBanco, movimientos, negocios, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
+import { categorias, cuentasBanco, movimientos, negocios, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { EmailService } from '@/services/email.service';
 import type {
   AprobarMovimientoInput,
@@ -178,12 +178,52 @@ export class MovimientoService {
 
     const isEfectuado = data.efectuado === true;
     const fechaPago = isEfectuado ? new Date() : null;
+    const now = new Date();
+
+    let estadoInicial: EstadoMovimiento = isEfectuado ? 'PAGADO' : 'PENDIENTE';
+    let aprobadoPor: number | null = null;
+    let fechaAprobacion: Date | null = null;
+
+    if (!isEfectuado && typeof data.categoriaId === 'number') {
+      const [categoria] = await db
+        .select({
+          requiereAprobacion: categorias.requiereAprobacion,
+          montoMaxSinAprobacion: categorias.montoMaxSinAprobacion,
+        })
+        .from(categorias)
+        .where(
+          and(
+            eq(categorias.id, data.categoriaId),
+            eq(categorias.activa, true),
+            or(isNull(categorias.negocioId), eq(categorias.negocioId, data.negocioId))
+          )
+        )
+        .limit(1);
+
+      if (!categoria) {
+        throw new Error('Categoría no encontrada');
+      }
+
+      if (categoria.requiereAprobacion === false) {
+        estadoInicial = 'APROBADO';
+        aprobadoPor = creadoPor;
+        fechaAprobacion = now;
+      } else if (categoria.montoMaxSinAprobacion !== null) {
+        const max = this.parseNumeric(categoria.montoMaxSinAprobacion);
+        if (typeof max === 'number' && data.monto <= max) {
+          estadoInicial = 'APROBADO';
+          aprobadoPor = creadoPor;
+          fechaAprobacion = now;
+        }
+      }
+    }
 
     const [movimiento] = await db
       .insert(movimientos)
       .values({
         negocioId: data.negocioId,
         centroCostoId: data.centroCostoId || null,
+        categoriaId: typeof data.categoriaId === 'number' ? data.categoriaId : null,
         tipo: data.tipo,
         fecha: data.fecha,
         concepto: data.concepto,
@@ -191,7 +231,9 @@ export class MovimientoService {
         monto: data.monto.toString(),
         cuentaBancoId: data.cuentaBancoId,
         creadoPor,
-        estado: isEfectuado ? 'PAGADO' : 'PENDIENTE',
+        estado: estadoInicial,
+        aprobadoPor,
+        fechaAprobacion,
         efectuado: isEfectuado,
         fechaPago,
         pagadoPor: isEfectuado ? creadoPor : null,
@@ -202,7 +244,7 @@ export class MovimientoService {
       throw new Error('No se pudo crear movimiento');
     }
 
-    if (!isEfectuado) {
+    if (!isEfectuado && movimiento.estado === 'PENDIENTE') {
       await this.notificarNuevoMovimiento(movimiento);
     }
 
@@ -233,6 +275,7 @@ export class MovimientoService {
         .values({
           negocioId: data.negocioId,
           centroCostoId: data.centroCostoId || null,
+          categoriaId: null,
           tipo: 'TRASPASO_SALIDA',
           fecha: data.fecha,
           concepto: data.concepto,
@@ -256,6 +299,7 @@ export class MovimientoService {
         .values({
           negocioId: data.negocioDestinoId,
           centroCostoId: data.centroCostoId || null,
+          categoriaId: null,
           tipo: 'TRASPASO_ENTRADA',
           fecha: data.fecha,
           concepto: data.concepto,

@@ -17,6 +17,17 @@ function formatTipoLabel(tipo: 'ingreso' | 'egreso') {
   return tipo === 'ingreso' ? 'Ingreso' : 'Egreso';
 }
 
+function parseMoney(raw: string | null): number | null {
+  if (!raw) return null;
+  const num = Number(raw);
+  if (!Number.isFinite(num) || Number.isNaN(num)) return null;
+  return num;
+}
+
+function formatCurrencyMXN(amount: number): string {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+}
+
 export type CategoriasTableProps = {
   categorias: Categoria[];
   onEditar: (categoria: Categoria) => void;
@@ -42,6 +53,7 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
             <TableHead>Nombre</TableHead>
             <TableHead>Tipo</TableHead>
             <TableHead>Ámbito</TableHead>
+            <TableHead>Aprobación</TableHead>
             <TableHead>Estado</TableHead>
             {puedeEditar ? <TableHead className="w-[140px]">Acciones</TableHead> : null}
           </TableRow>
@@ -52,6 +64,7 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
             const isGlobal = categoria.negocioId === null;
             const isOwner = rol === 'Dueño';
             const canEditThis = puedeEditar && (!isGlobal || isOwner);
+            const maxAuto = parseMoney(categoria.montoMaxSinAprobacion);
 
             return (
               <TableRow key={categoria.id}>
@@ -61,6 +74,17 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
                 </TableCell>
                 <TableCell>
                   <Badge variant={isGlobal ? 'outline' : 'secondary'}>{isGlobal ? 'Global' : 'Específica'}</Badge>
+                </TableCell>
+                <TableCell>
+                  {categoria.requiereAprobacion === false ? (
+                    <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Automática</Badge>
+                  ) : maxAuto !== null ? (
+                    <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">{`Hasta ${formatCurrencyMXN(maxAuto)} auto`}</Badge>
+                  ) : (
+                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
+                      Requerida
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={categoria.activa ? 'default' : 'secondary'}>{categoria.activa ? 'Activa' : 'Inactiva'}</Badge>

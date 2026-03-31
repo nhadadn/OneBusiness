@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -16,6 +17,8 @@ import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
 import { useCreateMovimiento, type CreateMovimientoData } from '@/hooks/use-movimientos';
+import { apiFetch } from '@/lib/api-client';
+import type { Categoria } from '@/types/categoria.types';
 
 const schema = z
   .object({
@@ -23,6 +26,7 @@ const schema = z
     tipo: z.enum(['INGRESO', 'EGRESO', 'TRASPASO_SALIDA']),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     concepto: z.string().min(1, 'Concepto requerido'),
+    categoriaId: z.number().optional(),
     tercero: z.string().optional(),
     monto: z
       .string()
@@ -88,6 +92,8 @@ export function MovimientoForm({
 
   const createMovimiento = useCreateMovimiento();
 
+  type CategoriasListResponse = { success: boolean; data: Categoria[] };
+
   const form = useForm<Values, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -95,6 +101,7 @@ export function MovimientoForm({
       tipo: 'INGRESO',
       fecha: todayISO(),
       concepto: '',
+      categoriaId: undefined,
       tercero: '',
       monto: '',
       cuentaBancoId: undefined as unknown as number,
@@ -118,6 +125,18 @@ export function MovimientoForm({
   const negocioDestinoId = form.watch('negocioDestinoId');
   const efectuado = form.watch('efectuado');
 
+  const tipoCategoriaQuery = tipo === 'INGRESO' ? 'ingreso' : tipo === 'EGRESO' ? 'egreso' : null;
+  const categoriasQuery = useQuery({
+    queryKey: ['categorias', negocioId, tipoCategoriaQuery],
+    enabled: typeof negocioId === 'number' && tipoCategoriaQuery !== null,
+    queryFn: async () => {
+      return apiFetch<CategoriasListResponse>(`/api/categorias?tipo=${encodeURIComponent(tipoCategoriaQuery!)}`, {
+        negocioId: typeof negocioId === 'number' ? negocioId : undefined,
+      });
+    },
+  });
+  const categorias = categoriasQuery.data?.data ?? [];
+
   const cuentasOrigenQuery = useCuentasBanco({ negocioId: typeof negocioId === 'number' ? negocioId : null });
   const cuentasDestinoQuery = useCuentasBanco({ negocioId: typeof negocioDestinoId === 'number' ? negocioDestinoId : null });
 
@@ -133,6 +152,7 @@ export function MovimientoForm({
     if (tipo !== 'TRASPASO_SALIDA') {
       form.setValue('negocioDestinoId', undefined);
       form.setValue('cuentaBancoDestinoId', undefined);
+      form.setValue('categoriaId', undefined);
     }
   }, [form, tipo]);
 
@@ -144,6 +164,7 @@ export function MovimientoForm({
       tipo: values.tipo,
       fecha: values.fecha,
       concepto: values.concepto,
+      categoriaId: values.categoriaId,
       tercero: values.tercero?.trim() ? values.tercero : undefined,
       monto: Number(values.monto),
       cuentaBancoId: values.cuentaBancoId,
@@ -166,12 +187,14 @@ export function MovimientoForm({
             tipo: 'INGRESO',
             fecha: fechaToKeep,
             concepto: '',
+            categoriaId: undefined,
             tercero: '',
             monto: '',
             cuentaBancoId: cuentaBancoIdToKeep,
             cuentaBancoDestinoId: undefined,
             negocioDestinoId: undefined,
             centroCostoId: undefined,
+            efectuado: false,
           });
         } else {
           form.reset({
@@ -179,12 +202,14 @@ export function MovimientoForm({
             tipo: 'INGRESO',
             fecha: todayISO(),
             concepto: '',
+            categoriaId: undefined,
             tercero: '',
             monto: '',
             cuentaBancoId: undefined as unknown as number,
             cuentaBancoDestinoId: undefined,
             negocioDestinoId: undefined,
             centroCostoId: undefined,
+            efectuado: false,
           });
         }
 
@@ -285,6 +310,38 @@ export function MovimientoForm({
             </FormItem>
           )}
         />
+
+        {tipo !== 'TRASPASO_SALIDA' ? (
+          <FormField
+            control={form.control}
+            name="categoriaId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoría (opcional)</FormLabel>
+                <FormControl>
+                  <Select
+                    value={typeof field.value === 'number' ? String(field.value) : '__none__'}
+                    onValueChange={(val) => field.onChange(val === '__none__' ? undefined : Number(val))}
+                    disabled={isSubmitting || categoriasQuery.isLoading || tipoCategoriaQuery === null}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={categoriasQuery.isLoading ? 'Cargando...' : 'Sin categoría'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sin categoría</SelectItem>
+                      {categorias.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
 
         <FormField
           control={form.control}

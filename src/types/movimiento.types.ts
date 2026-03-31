@@ -5,6 +5,7 @@ export interface Movimiento {
   id: number;
   negocioId: number;
   centroCostoId: number | null;
+  categoriaId: number | null;
   tipo: TipoMovimiento;
   fecha: string;
   concepto: string;
@@ -29,6 +30,7 @@ export interface Movimiento {
 export interface CreateMovimientoInput {
   negocioId: number;
   centroCostoId?: number;
+  categoriaId?: number;
   tipo: TipoMovimiento;
   fecha: string;
   concepto: string;

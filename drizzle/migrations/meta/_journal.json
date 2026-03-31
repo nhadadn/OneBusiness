@@ -85,6 +85,13 @@
       "when": 1774915809979,
       "tag": "0011_uneven_zaladane",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1774934126360,
+      "tag": "0012_uneven_joystick",
+      "breakpoints": true
     }
   ]
 }

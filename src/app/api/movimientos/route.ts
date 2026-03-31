@@ -13,6 +13,7 @@ const createMovimientoSchema = z
   .object({
     negocioId: z.number().positive('Negocio requerido'),
     centroCostoId: z.number().optional(),
+    categoriaId: z.number().int().positive().optional(),
     tipo: z.enum(['INGRESO', 'EGRESO', 'TRASPASO_SALIDA']),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD'),
     concepto: z.string().min(1, 'Concepto requerido'),

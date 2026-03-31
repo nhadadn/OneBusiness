@@ -71,6 +71,7 @@ export type CreateMovimientoData = {
   tipo: 'INGRESO' | 'EGRESO' | 'TRASPASO_SALIDA';
   fecha: string;
   concepto: string;
+  categoriaId?: number;
   tercero?: string;
   monto: number;
   cuentaBancoId: number;
