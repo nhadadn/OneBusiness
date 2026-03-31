@@ -17,6 +17,11 @@ function formatInteger(value: number | null | undefined): string {
   return new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 }).format(value);
 }
 
+function parseMoney(value: string | null | undefined): number {
+  const parsed = Number.parseFloat(value ?? '0');
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function getStatusVariant(estadoArqueo: EstadoArqueo) {
   switch (estadoArqueo) {
     case 'CUADRADO':
@@ -44,6 +49,10 @@ export function ArqueoSummary({ arqueo, className }: ArqueoSummaryProps) {
         ? 'text-amber-800'
         : 'text-foreground';
 
+  const totalComprometido = React.useMemo(() => {
+    return arqueo.cuentas.reduce((acc, c) => acc + parseMoney(c.totalAprobadoNoPagado), 0);
+  }, [arqueo.cuentas]);
+
   return (
     <Card className={cn('border-border bg-card shadow-none', className)}>
       <CardHeader className="pb-3">
@@ -64,6 +73,11 @@ export function ArqueoSummary({ arqueo, className }: ArqueoSummaryProps) {
             {arqueo.totales.movimientosPendientes > 0 ? (
               <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">
                 {formatInteger(arqueo.totales.movimientosPendientes)} pendientes
+              </Badge>
+            ) : null}
+            {Math.abs(totalComprometido) > 0.000001 ? (
+              <Badge variant="outline" className="bg-amber-50 text-amber-800 hover:bg-amber-50">
+                {formatCurrencyMXN(totalComprometido)} comprometido
               </Badge>
             ) : null}
           </div>
@@ -106,6 +120,12 @@ export function ArqueoSummary({ arqueo, className }: ArqueoSummaryProps) {
               {formatCurrencyMXN(arqueo.totales.diferencia)}
             </div>
           </div>
+          {Math.abs(totalComprometido) > 0.000001 ? (
+            <div className="rounded-md border border-border p-3">
+              <div className="text-xs text-muted-foreground">Comprometido (aprobado no pagado)</div>
+              <div className="mt-1 font-mono text-base text-amber-800">{formatCurrencyMXN(totalComprometido)}</div>
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>

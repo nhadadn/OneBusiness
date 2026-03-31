@@ -18,7 +18,7 @@ const querySchema = z.object({
   fechaDesde: z.string().optional(),
   fechaHasta: z.string().optional(),
   tipo: z.enum(['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']).optional(),
-  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional(),
+  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO', 'PAGADO', 'CANCELADO']).optional(),
 });
 
 function formatLocalDateYYYYMMDD(date: Date): string {
@@ -105,9 +105,11 @@ export async function GET(request: Request) {
       .select({
         negocioId: negociosTable.id,
         nombre: negociosTable.nombre,
-        totalIngresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
-        totalEgresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        totalIngresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        totalEgresos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
         movimientosPendientes: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PENDIENTE' THEN 1 ELSE 0 END), 0)`,
+        movimientosComprometidos: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' THEN 1 ELSE 0 END), 0)`,
+        totalComprometido: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} IN ('INGRESO', 'TRASPASO_ENTRADA') THEN ${movimientos.monto} WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} IN ('EGRESO', 'TRASPASO_SALIDA') THEN -${movimientos.monto} ELSE 0 END), 0)`,
       })
       .from(negociosTable)
       .leftJoin(movimientos, and(...joinConditions))
@@ -121,6 +123,8 @@ export async function GET(request: Request) {
         const totalEgresos = parseMoney(row.totalEgresos);
         const saldoNeto = totalIngresos - totalEgresos;
         const movimientosPendientes = parseMoney(row.movimientosPendientes);
+        const movimientosComprometidos = parseMoney(row.movimientosComprometidos);
+        const totalComprometido = parseMoney(row.totalComprometido);
 
         const arqueo = await cuentaBancoService.calcularArqueoNegocio(row.negocioId, fechaHasta);
 
@@ -132,7 +136,9 @@ export async function GET(request: Request) {
           saldoNeto,
           movimientosPendientes,
           arqueo,
-        };
+          movimientosComprometidos,
+          totalComprometido,
+        } as ConsolidadoNegocioItem;
       })
     );
 
@@ -161,7 +167,7 @@ export async function GET(request: Request) {
       negocios,
       filters,
       filtersDisponibles: {
-        estados: ['PENDIENTE', 'APROBADO', 'RECHAZADO'],
+        estados: ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'PAGADO', 'CANCELADO'],
         tipos: ['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA'],
       },
     };

@@ -75,6 +75,8 @@ export type ArqueoCuentaBanco = {
   diferencia: number | null;
   estadoArqueo: EstadoArqueo;
   movimientosPendientes: number;
+  movimientosAprobadosNoPagados: number;
+  totalAprobadoNoPagado: string;
 };
 
 export type ArqueoNegocio = {
@@ -95,6 +97,8 @@ export type ArqueoNegocio = {
     diferencia: number | null;
     estadoArqueo: EstadoArqueo;
     movimientosPendientes: number;
+    movimientosAprobadosNoPagados: number;
+    totalAprobadoNoPagado: string;
   }>;
   totales: {
     saldoInicial: number;

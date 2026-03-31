@@ -15,6 +15,11 @@ function formatCurrencyMXN(value: number | null): string {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
+function parseMoney(value: string | null | undefined): number {
+  const parsed = Number.parseFloat(value ?? '0');
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function formatDateLabel(value: string | null): string | null {
   if (!value) return null;
   const onlyDate = value.includes('T') ? value.split('T')[0] : value;
@@ -62,6 +67,7 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                 <TableHead className="text-right">Saldo real</TableHead>
                 <TableHead className="text-right">Diferencia</TableHead>
                 <TableHead className="text-right">Pendientes</TableHead>
+                <TableHead className="text-right">Comprometidos</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,6 +80,7 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                       ? 'text-amber-800'
                       : 'text-foreground';
                 const fechaSaldoRealLabel = formatDateLabel(c.fechaSaldoReal);
+                const totalAprobadoNoPagado = parseMoney(c.totalAprobadoNoPagado);
 
                 return (
                   <TableRow key={c.cuentaBancoId}>
@@ -106,6 +113,13 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                         </Badge>
                       ) : (
                         <span className="text-muted-foreground">0</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.movimientosAprobadosNoPagados > 0 ? (
+                        <span className="text-sm font-medium text-amber-800">{`${c.movimientosAprobadosNoPagados} comprometidos (${formatCurrencyMXN(totalAprobadoNoPagado)})`}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   </TableRow>
