@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,6 +35,7 @@ const schema = z
     cuentaBancoDestinoId: z.number().optional(),
     negocioDestinoId: z.number().optional(),
     centroCostoId: z.number().optional(),
+    efectuado: z.boolean(),
   })
   .refine((data) => data.tipo !== 'TRASPASO_SALIDA' || (!!data.cuentaBancoDestinoId && !!data.negocioDestinoId), {
     message: 'Traspaso requiere cuenta y negocio de destino',
@@ -86,7 +88,7 @@ export function MovimientoForm({
 
   const createMovimiento = useCreateMovimiento();
 
-  const form = useForm<Values>({
+  const form = useForm<Values, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       negocioId: defaultNegocioId,
@@ -98,8 +100,10 @@ export function MovimientoForm({
       cuentaBancoId: undefined as unknown as number,
       cuentaBancoDestinoId: undefined,
       negocioDestinoId: undefined,
+      efectuado: false,
     },
   });
+
 
   React.useEffect(() => {
     if (!user) return;
@@ -112,6 +116,7 @@ export function MovimientoForm({
   const tipo = form.watch('tipo');
   const negocioId = form.watch('negocioId');
   const negocioDestinoId = form.watch('negocioDestinoId');
+  const efectuado = form.watch('efectuado');
 
   const cuentasOrigenQuery = useCuentasBanco({ negocioId: typeof negocioId === 'number' ? negocioId : null });
   const cuentasDestinoQuery = useCuentasBanco({ negocioId: typeof negocioDestinoId === 'number' ? negocioDestinoId : null });
@@ -145,6 +150,7 @@ export function MovimientoForm({
       cuentaBancoDestinoId: values.cuentaBancoDestinoId,
       negocioDestinoId: values.negocioDestinoId,
       centroCostoId: values.centroCostoId,
+      efectuado: values.efectuado,
     };
 
     try {
@@ -417,6 +423,31 @@ export function MovimientoForm({
         )}
 
         {createMovimiento.error instanceof Error && <div className="text-sm text-red-600">{createMovimiento.error.message}</div>}
+
+        <FormField
+          control={form.control}
+          name="efectuado"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3">
+                  <Checkbox checked={Boolean(field.value)} onCheckedChange={(val) => field.onChange(val === true)} disabled={isSubmitting} />
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-slate-900">Este movimiento ya fue efectuado</div>
+                    <div className="text-xs text-slate-600">Se registrará como PAGADO y afectará el saldo inmediatamente.</div>
+                  </div>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {efectuado ? (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+            Este movimiento se creará directamente como PAGADO y el saldo de la cuenta se actualizará de inmediato.
+          </div>
+        ) : null}
 
         <SheetFooter className="mt-6">
           {typeof onCancel === 'function' ? (
