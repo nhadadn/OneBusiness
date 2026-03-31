@@ -3,12 +3,25 @@ import { eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { negocios } from '@/lib/drizzle';
 import type { RoleName } from '@/types/permissions.types';
-import type { NegocioListItem } from '@/types/negocio.types';
+
+export type NegocioCrudListItem = {
+  id: number;
+  nombre: string;
+  rubro: string | null;
+  modeloIngreso: string | null;
+  tieneSocios: boolean | null;
+  activo: boolean | null;
+  umbralAlerta?: string | null;
+  umbralCritico?: string | null;
+  rfc?: string | null;
+  direccion?: string | null;
+  telefono?: string | null;
+};
 
 export async function getNegocios(
   filtros: { negocioId?: number },
   userContext: { rol: RoleName; negocios: number[] }
-): Promise<NegocioListItem[]> {
+): Promise<NegocioCrudListItem[]> {
   const baseSelect = {
     id: negocios.id,
     nombre: negocios.nombre,
@@ -16,6 +29,11 @@ export async function getNegocios(
     modeloIngreso: negocios.modeloIngreso,
     tieneSocios: negocios.tieneSocios,
     activo: negocios.activo,
+    umbralAlerta: negocios.umbralAlerta,
+    umbralCritico: negocios.umbralCritico,
+    rfc: negocios.rfc,
+    direccion: negocios.direccion,
+    telefono: negocios.telefono,
   } as const;
 
   if (userContext.rol === 'Dueño') {

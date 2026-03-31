@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
