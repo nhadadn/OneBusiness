@@ -204,7 +204,16 @@ export async function POST(request: Request) {
     const cuentaBancoService = new CuentaBancoService();
 
     const negocioByNombre = new Map<string, number>(negociosFound.map((n) => [n.nombre, n.id]));
-    const cuentasByNombre = new Map<string, Array<any>>();
+    const cuentasByNombre = new Map<
+      string,
+      Array<{
+        id: number;
+        nombre: string;
+        negocioId: number | null;
+        esGlobal: boolean;
+        negociosCompartidos: Array<{ cuentaId: number; negocioId: number }>;
+      }>
+    >();
     for (const c of cuentasFound) {
       const list = cuentasByNombre.get(c.nombre) ?? [];
       const negociosCompartidos = compartidos.filter(nc => nc.cuentaId === c.id);

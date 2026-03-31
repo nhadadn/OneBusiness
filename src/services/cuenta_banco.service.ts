@@ -136,7 +136,7 @@ export class CuentaBancoService {
 
     return await db.transaction(async (tx) => {
       let negocioIdPrincipal = data.negocioId ?? null;
-      let esGlobal = data.esGlobal ?? false;
+      const esGlobal = data.esGlobal ?? false;
       
       if (esGlobal) {
         negocioIdPrincipal = null;
