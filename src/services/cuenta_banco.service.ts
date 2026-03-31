@@ -258,7 +258,7 @@ export class CuentaBancoService {
         egresos: sql<string>`COALESCE(SUM(CASE WHEN tipo IN ('EGRESO', 'TRASPASO_SALIDA') THEN monto ELSE 0 END), 0)`,
       })
       .from(movimientos)
-      .where(and(eq(movimientos.cuentaBancoId, cuentaBancoId), eq(movimientos.estado, 'APROBADO'), eq(movimientos.activo, true)));
+      .where(and(eq(movimientos.cuentaBancoId, cuentaBancoId), eq(movimientos.estado, 'PAGADO'), eq(movimientos.activo, true)));
 
     const ingresos = parseFloat(result[0]?.ingresos || '0');
     const egresos = parseFloat(result[0]?.egresos || '0');
@@ -289,10 +289,10 @@ export class CuentaBancoService {
       throw new Error('Cuenta no encontrada');
     }
 
-    const aprobadosWhere = and(
+    const pagadosWhere = and(
       eq(movimientos.cuentaBancoId, cuentaBancoId),
       eq(movimientos.activo, true),
-      eq(movimientos.estado, 'APROBADO'),
+      eq(movimientos.estado, 'PAGADO'),
       lte(movimientos.fecha, fechaCorte)
     );
 
@@ -304,7 +304,7 @@ export class CuentaBancoService {
         traspasoSalida: sql<string>`COALESCE(SUM(CASE WHEN tipo = 'TRASPASO_SALIDA' THEN monto ELSE 0 END), 0)`,
       })
       .from(movimientos)
-      .where(aprobadosWhere);
+      .where(pagadosWhere);
 
     const ingreso = this.parseMoney(result[0]?.ingreso);
     const egreso = this.parseMoney(result[0]?.egreso);
@@ -357,10 +357,10 @@ export class CuentaBancoService {
         saldoInicial: cuentasBanco.saldoInicial,
         saldoReal: cuentasBanco.saldoReal,
         fechaSaldoReal: cuentasBanco.fechaSaldoReal,
-        ingreso: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
-        egreso: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
-        traspasoEntrada: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'TRASPASO_ENTRADA' THEN ${movimientos.monto} ELSE 0 END), 0)`,
-        traspasoSalida: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'APROBADO' AND ${movimientos.tipo} = 'TRASPASO_SALIDA' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        ingreso: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'INGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        egreso: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'EGRESO' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        traspasoEntrada: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'TRASPASO_ENTRADA' THEN ${movimientos.monto} ELSE 0 END), 0)`,
+        traspasoSalida: sql<string>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PAGADO' AND ${movimientos.tipo} = 'TRASPASO_SALIDA' THEN ${movimientos.monto} ELSE 0 END), 0)`,
         movimientosPendientes: sql<number>`COALESCE(SUM(CASE WHEN ${movimientos.id} IS NOT NULL AND ${movimientos.estado} = 'PENDIENTE' THEN 1 ELSE 0 END), 0)`,
       })
       .from(cuentasBanco)

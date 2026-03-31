@@ -21,6 +21,7 @@ const createMovimientoSchema = z
     cuentaBancoId: z.number().positive('Cuenta bancaria requerida'),
     cuentaBancoDestinoId: z.number().optional(),
     negocioDestinoId: z.number().optional(),
+    efectuado: z.boolean().optional().default(false),
   })
   .refine((data) => data.tipo !== 'TRASPASO_SALIDA' || (!!data.cuentaBancoDestinoId && !!data.negocioDestinoId), {
     message: 'Traspaso requiere cuenta y negocio de destino',
@@ -28,7 +29,7 @@ const createMovimientoSchema = z
 
 const listQuerySchema = z.object({
   negocioId: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().positive().optional()),
-  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO']).optional(),
+  estado: z.enum(['PENDIENTE', 'APROBADO', 'RECHAZADO', 'PAGADO', 'CANCELADO']).optional(),
   tipo: z.enum(['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']).optional(),
   fechaDesde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD').optional(),
   fechaHasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD').optional(),
