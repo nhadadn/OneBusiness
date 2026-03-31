@@ -126,7 +126,7 @@ export const usuarioNegocioRelations = relations(usuarioNegocio, ({ one }) => ({
 
 export const tipoCuentaEnum = pgEnum('tipo_cuenta', ['EFECTIVO', 'BANCARIA', 'CAJA_CHICA']);
 export const tipoMovimientoEnum = pgEnum('tipo_movimiento', ['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']);
-export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO']);
+export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'PAGADO', 'CANCELADO']);
 export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['INGRESO', 'EGRESO']);
 export const estadoCotizacionEnum = pgEnum('estado_cotizacion', ['BORRADOR', 'ENVIADA', 'APROBADA', 'FACTURADA', 'CANCELADA']);
 
@@ -135,6 +135,8 @@ export const categorias = pgTable('categorias', {
   nombre: varchar('nombre', { length: 100 }).notNull(),
   tipo: tipoCategoriaEnum('tipo').notNull(),
   negocioId: integer('negocio_id').references(() => negocios.id, { onDelete: 'cascade' }),
+  requiereAprobacion: boolean('requiere_aprobacion').notNull().default(true),
+  montoMaxSinAprobacion: numeric('monto_max_sin_aprobacion', { precision: 15, scale: 2 }),
   activa: boolean('activa').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -153,7 +155,8 @@ export const cuentasBanco = pgTable('cuentas_banco', {
   tipo: tipoCuentaEnum('tipo').notNull(),
   bancoInstitucion: varchar('banco_institucion', { length: 50 }),
   titular: varchar('titular', { length: 100 }),
-  negocioId: integer('negocio_id').notNull().references(() => negocios.id),
+  negocioId: integer('negocio_id').references(() => negocios.id),
+  esGlobal: boolean('es_global').notNull().default(false),
   saldoInicial: numeric('saldo_inicial', { precision: 15, scale: 2 }).notNull().default('0'),
   saldoReal: numeric('saldo_real', { precision: 15, scale: 2 }),
   fechaSaldoReal: timestamp('fecha_saldo_real'),
@@ -168,10 +171,24 @@ export const cuentasBanco = pgTable('cuentas_banco', {
   };
 });
 
+export const cuentaNegocio = pgTable('cuenta_negocio', {
+  id: serial('id').primaryKey(),
+  cuentaId: integer('cuenta_id').notNull().references(() => cuentasBanco.id, { onDelete: 'cascade' }),
+  negocioId: integer('negocio_id').notNull().references(() => negocios.id, { onDelete: 'cascade' }),
+  fechaAsignacion: timestamp('fecha_asignacion').defaultNow(),
+}, (table) => {
+  return {
+    cuentaIdx: index('idx_cuenta_negocio_cuenta').on(table.cuentaId),
+    negocioIdx: index('idx_cuenta_negocio_negocio').on(table.negocioId),
+    uniqueCuentaNegocio: uniqueIndex('uq_cuenta_negocio').on(table.cuentaId, table.negocioId),
+  };
+});
+
 export const movimientos = pgTable('movimientos', {
   id: serial('id').primaryKey(),
   negocioId: integer('negocio_id').notNull().references(() => negocios.id),
   centroCostoId: integer('centro_costo_id').references(() => centrosCosto.id),
+  categoriaId: integer('categoria_id').references(() => categorias.id),
   tipo: tipoMovimientoEnum('tipo').notNull(),
   fecha: date('fecha').notNull(),
   concepto: text('concepto').notNull(),
@@ -183,6 +200,9 @@ export const movimientos = pgTable('movimientos', {
   creadoPor: integer('creado_por').notNull().references(() => usuarios.id),
   aprobadoPor: integer('aprobado_por').references(() => usuarios.id),
   fechaAprobacion: timestamp('fecha_aprobacion'),
+  efectuado: boolean('efectuado').notNull().default(false),
+  fechaPago: timestamp('fecha_pago'),
+  pagadoPor: integer('pagado_por').references(() => usuarios.id),
   motivoRechazo: text('motivo_rechazo'),
   version: integer('version').notNull().default(1),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -197,6 +217,7 @@ export const movimientos = pgTable('movimientos', {
     cuentaBancoIdx: index('idx_movimientos_cuenta_banco').on(table.cuentaBancoId),
     creadoPorIdx: index('idx_movimientos_creado_por').on(table.creadoPor),
     aprobadoPorIdx: index('idx_movimientos_aprobado_por').on(table.aprobadoPor),
+    pagadoPorIdx: index('idx_movimientos_pagado_por').on(table.pagadoPor),
     traspasoRefIdx: index('idx_movimientos_traspaso_id').on(table.traspasoRefId),
     traspasoRefFk: foreignKey({
       columns: [table.traspasoRefId],
@@ -261,7 +282,19 @@ export const cuentasBancoRelations = relations(cuentasBanco, ({ one, many }) => 
     fields: [cuentasBanco.negocioId],
     references: [negocios.id],
   }),
+  negociosCompartidos: many(cuentaNegocio),
   movimientos: many(movimientos),
+}));
+
+export const cuentaNegocioRelations = relations(cuentaNegocio, ({ one }) => ({
+  cuenta: one(cuentasBanco, {
+    fields: [cuentaNegocio.cuentaId],
+    references: [cuentasBanco.id],
+  }),
+  negocio: one(negocios, {
+    fields: [cuentaNegocio.negocioId],
+    references: [negocios.id],
+  }),
 }));
 
 export const movimientosRelations = relations(movimientos, ({ one }) => ({
@@ -286,6 +319,11 @@ export const movimientosRelations = relations(movimientos, ({ one }) => ({
     fields: [movimientos.aprobadoPor],
     references: [usuarios.id],
     relationName: 'movimientos_aprobados',
+  }),
+  pagadoPorUsuario: one(usuarios, {
+    fields: [movimientos.pagadoPor],
+    references: [usuarios.id],
+    relationName: 'movimientos_pagados',
   }),
   traspasoRef: one(movimientos, {
     fields: [movimientos.traspasoRefId],

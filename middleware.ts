@@ -14,6 +14,7 @@ function isProtectedPagePath(pathname: string) {
   return (
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/movimientos') ||
+    pathname.startsWith('/consolidado') ||
     pathname.startsWith('/configuracion') ||
     pathname.startsWith('/negocios') ||
     pathname.startsWith('/usuarios') ||

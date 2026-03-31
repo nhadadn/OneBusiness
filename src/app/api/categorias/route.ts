@@ -14,11 +14,18 @@ const listQuerySchema = z.object({
   tipo: tipoSchema.optional(),
 });
 
-const crearCategoriaSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres').trim(),
-  tipo: tipoSchema,
-  esGlobal: z.boolean().optional().default(false),
-});
+const crearCategoriaSchema = z
+  .object({
+    nombre: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres').trim(),
+    tipo: tipoSchema,
+    esGlobal: z.boolean().optional().default(false),
+    requiereAprobacion: z.boolean().optional(),
+    montoMaxSinAprobacion: z.string().optional().nullable(),
+  })
+  .refine((data) => data.requiereAprobacion !== false || data.montoMaxSinAprobacion == null, {
+    message: 'montoMaxSinAprobacion debe ser null cuando requiereAprobacion=false',
+    path: ['montoMaxSinAprobacion'],
+  });
 
 function handleServiceError(error: unknown): NextResponse {
   if (error instanceof TenantError) {

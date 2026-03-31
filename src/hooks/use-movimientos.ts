@@ -1,14 +1,49 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
-import { apiFetch } from '@/lib/api-client';
+import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
 function dispatchUiRefresh(eventName: string) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(eventName));
+}
+
+type ApiFetchFn = (url: string, options?: RequestInit & { negocioId?: number | null }) => Promise<Response>;
+
+type ApiErrorPayload = {
+  success?: boolean;
+  error?: string;
+  details?: unknown;
+};
+
+async function apiJson<T>(
+  apiFetch: ApiFetchFn,
+  url: string,
+  options?: Omit<RequestInit, 'body'> & { negocioId?: number | null; json?: unknown }
+): Promise<T> {
+  const res = await apiFetch(url, {
+    ...options,
+    body: options?.json !== undefined ? JSON.stringify(options.json) : undefined,
+  });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const isJson = contentType.includes('application/json');
+
+  if (!res.ok) {
+    const payload = isJson ? ((await res.json()) as ApiErrorPayload) : undefined;
+    const message = payload?.error ?? `Error HTTP ${res.status}`;
+    throw new Error(message);
+  }
+
+  if (!isJson) {
+    return (await res.text()) as unknown as T;
+  }
+
+  return (await res.json()) as T;
 }
 
 export type MovimientoListItem = {
@@ -36,12 +71,14 @@ export type CreateMovimientoData = {
   tipo: 'INGRESO' | 'EGRESO' | 'TRASPASO_SALIDA';
   fecha: string;
   concepto: string;
+  categoriaId?: number;
   tercero?: string;
   monto: number;
   cuentaBancoId: number;
   cuentaBancoDestinoId?: number;
   negocioDestinoId?: number;
   centroCostoId?: number;
+  efectuado?: boolean;
 };
 
 export type MovimientosFilters = {
@@ -144,11 +181,13 @@ type MovimientoDetalleApiResponse = {
 };
 
 export function useMovimientoDetalle(id: number | null, negocioId: number | null) {
+  const { apiFetch } = useApiClient();
+
   return useQuery({
     queryKey: ['movimiento', id, negocioId],
     enabled: id !== null,
     queryFn: async () => {
-      const raw = await apiFetch<MovimientoDetalleApiResponse>(`/api/movimientos/${id}`, {
+      const raw = await apiJson<MovimientoDetalleApiResponse>(apiFetch, `/api/movimientos/${id}`, {
         negocioId: typeof negocioId === 'number' ? negocioId : undefined,
       });
       const list = toMovimientoListItem(raw.data, raw.data.negocioId);
@@ -163,6 +202,8 @@ export function useMovimientoDetalle(id: number | null, negocioId: number | null
 }
 
 export function useMovimientos(filters: MovimientosFilters) {
+  const { apiFetch } = useApiClient();
+
   return useQuery({
     queryKey: ['movimientos', filters],
     enabled: typeof filters.negocioId === 'number',
@@ -178,7 +219,7 @@ export function useMovimientos(filters: MovimientosFilters) {
       if (typeof filters.limit === 'number') searchParams.set('limit', String(filters.limit));
 
       const url = searchParams.size ? `/api/movimientos?${searchParams.toString()}` : '/api/movimientos';
-      const raw = await apiFetch<MovimientosListApiResponse>(url, { negocioId: filters.negocioId });
+      const raw = await apiJson<MovimientosListApiResponse>(apiFetch, url, { negocioId: filters.negocioId });
 
       const page = filters.page ?? 1;
       const limit = filters.limit ?? 50;
@@ -196,14 +237,15 @@ export function useMovimientos(filters: MovimientosFilters) {
 }
 
 export function useReenviarMovimiento() {
+  const { apiFetch } = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (args: { id: number; negocioId?: number; cambios: { concepto?: string; monto?: number; fecha?: string; tercero?: string } }) => {
-      return apiFetch<{ success: boolean; data: unknown }>(`/api/movimientos/${args.id}/reenviar`, {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}/reenviar`, {
         method: 'PATCH',
         negocioId: args.negocioId,
-        body: args.cambios,
+        json: args.cambios,
       });
     },
     onSuccess: async (_data, variables) => {
@@ -223,6 +265,7 @@ type PendientesApiResponse = {
 
 export function useMovimientoPendientesCount() {
   const { user } = useAuth();
+  const { apiFetch } = useApiClient();
   const canSee = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const negocioId = user?.rol === 'Dueño' ? undefined : user?.negocios?.[0];
 
@@ -230,7 +273,7 @@ export function useMovimientoPendientesCount() {
     queryKey: ['movimientos-pendientes'],
     enabled: Boolean(canSee && user),
     queryFn: async () => {
-      const response = await apiFetch<PendientesApiResponse>('/api/movimientos/pendientes', { negocioId });
+      const response = await apiJson<PendientesApiResponse>(apiFetch, '/api/movimientos/pendientes', { negocioId });
       const porNegocio = response.data.map((row) => ({
         negocioId: row.negocioId,
         nombre: `Negocio ${row.negocioId}`,
@@ -243,14 +286,15 @@ export function useMovimientoPendientesCount() {
 }
 
 export function useCreateMovimiento() {
+  const { apiFetch } = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (payload: CreateMovimientoData) => {
-      return apiFetch<{ success: boolean; data: unknown }>('/api/movimientos', {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, '/api/movimientos', {
         method: 'POST',
         negocioId: payload.negocioId,
-        body: payload,
+        json: payload,
       });
     },
     onSuccess: async () => {
@@ -263,11 +307,12 @@ export function useCreateMovimiento() {
 }
 
 export function useAprobarMovimiento() {
+  const { apiFetch } = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (args: { id: number; negocioId?: number }) => {
-      return apiFetch<{ success: boolean; data: unknown }>(`/api/movimientos/${args.id}/aprobar`, {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}/aprobar`, {
         method: 'PATCH',
         negocioId: args.negocioId,
       });
@@ -282,14 +327,15 @@ export function useAprobarMovimiento() {
 }
 
 export function useRechazarMovimiento() {
+  const { apiFetch } = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (args: { id: number; motivoRechazo: string; negocioId?: number }) => {
-      return apiFetch<{ success: boolean; data: unknown }>(`/api/movimientos/${args.id}/rechazar`, {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}/rechazar`, {
         method: 'PATCH',
         negocioId: args.negocioId,
-        body: { motivoRechazo: args.motivoRechazo },
+        json: { motivoRechazo: args.motivoRechazo },
       });
     },
     onSuccess: async () => {
@@ -302,11 +348,12 @@ export function useRechazarMovimiento() {
 }
 
 export function useDeleteMovimiento() {
+  const { apiFetch } = useApiClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (args: { id: number; negocioId?: number }) => {
-      return apiFetch<{ success: boolean; data: unknown }>(`/api/movimientos/${args.id}`, {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}`, {
         method: 'DELETE',
         negocioId: args.negocioId,
       });
@@ -316,6 +363,56 @@ export function useDeleteMovimiento() {
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
       dispatchUiRefresh('onebusiness:movimientos-refresh');
       dispatchUiRefresh('onebusiness:pending-count-refresh');
+    },
+  });
+}
+
+export function useMarcarPagado() {
+  const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (args: { id: number; negocioId?: number; fechaPago?: string }) => {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}/pagar`, {
+        method: 'PATCH',
+        negocioId: args.negocioId,
+        json: args.fechaPago ? { fechaPago: args.fechaPago } : {},
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+      await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+      dispatchUiRefresh('onebusiness:movimientos-refresh');
+      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      toast.success('Movimiento marcado como pagado', { duration: 2500 });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'No se pudo marcar como pagado', { duration: 5000 });
+    },
+  });
+}
+
+export function useCancelarMovimiento() {
+  const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (args: { id: number; negocioId?: number; motivo?: string }) => {
+      return apiJson<{ success: boolean; data: unknown }>(apiFetch, `/api/movimientos/${args.id}/cancelar`, {
+        method: 'PATCH',
+        negocioId: args.negocioId,
+        json: args.motivo ? { motivo: args.motivo } : {},
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+      await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+      dispatchUiRefresh('onebusiness:movimientos-refresh');
+      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      toast.success('Movimiento cancelado', { duration: 2500 });
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'No se pudo cancelar el movimiento', { duration: 5000 });
     },
   });
 }

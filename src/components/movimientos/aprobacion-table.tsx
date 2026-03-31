@@ -1,17 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { Check, CircleCheck, X } from 'lucide-react';
+import { Check, CircleCheck, HandCoins, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { EstadoBadge } from '@/components/movimientos/estado-badge';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { MovimientosLoader } from '@/components/shared/page-loader';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useMovimientos, type MovimientoListItem } from '@/hooks/use-movimientos';
+import { useCancelarMovimiento, useMarcarPagado, useMovimientos, type MovimientoListItem } from '@/hooks/use-movimientos';
 import type { TipoMovimiento } from '@/types/movimiento.types';
 
 export type AprobacionTableProps = {
@@ -59,20 +61,37 @@ export function AprobacionTable({
   const [page, setPage] = React.useState(1);
   const limit = 50;
 
+  const [cancelarOpen, setCancelarOpen] = React.useState(false);
+  const [cancelarTarget, setCancelarTarget] = React.useState<MovimientoListItem | null>(null);
+
   React.useEffect(() => {
     setPage(1);
   }, [negocioId]);
 
-  const query = useMovimientos({
+  const pendientesQuery = useMovimientos({
     negocioId: typeof negocioId === 'number' ? negocioId : undefined,
     estado: 'PENDIENTE',
     page,
     limit,
   });
 
-  const data = query.data;
-  const items = data?.items ?? [];
-  const total = data?.total ?? 0;
+  const aprobadosQuery = useMovimientos({
+    negocioId: typeof negocioId === 'number' ? negocioId : undefined,
+    estado: 'APROBADO',
+    page,
+    limit,
+  });
+
+  const marcarPagado = useMarcarPagado();
+  const cancelarMovimiento = useCancelarMovimiento();
+
+  const items = React.useMemo(() => {
+    const all = [...(pendientesQuery.data?.items ?? []), ...(aprobadosQuery.data?.items ?? [])];
+    all.sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return all;
+  }, [aprobadosQuery.data?.items, pendientesQuery.data?.items]);
+
+  const total = (pendientesQuery.data?.total ?? 0) + (aprobadosQuery.data?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const canPrev = page > 1;
@@ -84,16 +103,20 @@ export function AprobacionTable({
     );
   }
 
-  if (query.isLoading) {
+  if (pendientesQuery.isLoading || aprobadosQuery.isLoading) {
     return <MovimientosLoader />;
   }
 
-  if (query.error instanceof Error) {
-    return <ErrorState message={query.error.message} onRetry={() => query.refetch()} />;
+  if (pendientesQuery.error instanceof Error) {
+    return <ErrorState message={pendientesQuery.error.message} onRetry={() => pendientesQuery.refetch()} />;
+  }
+
+  if (aprobadosQuery.error instanceof Error) {
+    return <ErrorState message={aprobadosQuery.error.message} onRetry={() => aprobadosQuery.refetch()} />;
   }
 
   if (items.length === 0) {
-    return <EmptyState icon={CircleCheck} title="Todo al día" description="No hay movimientos pendientes de aprobación." />;
+    return <EmptyState icon={CircleCheck} title="Todo al dÃ­a" description="No hay movimientos pendientes ni aprobados por pagar." />;
   }
 
   return (
@@ -133,6 +156,11 @@ export function AprobacionTable({
             {items.map((mov) => {
               const monto = formatCurrencyMXN(parseMoney(mov.monto));
               const negocioLabel = negocioOptions.find((n) => n.id === mov.negocioId)?.label ?? `Negocio ${mov.negocioId}`;
+              const isApproving = false;
+              const isRejecting = false;
+              const isPaying = marcarPagado.isPending;
+              const isCanceling = cancelarMovimiento.isPending;
+              const isBusy = isApproving || isRejecting || isPaying || isCanceling;
               return (
                 <TableRow
                   key={mov.id}
@@ -150,11 +178,46 @@ export function AprobacionTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button size="sm" variant="ghost" onClick={() => onAprobar?.(mov)}>
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => onRechazar?.(mov)}>
-                        <X className="h-4 w-4" />
+                      {mov.estado === 'PENDIENTE' ? (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => onAprobar?.(mov)} disabled={isBusy} aria-label="Aprobar">
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => onRechazar?.(mov)} disabled={isBusy} aria-label="Rechazar">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      ) : null}
+
+                      {mov.estado === 'APROBADO' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isBusy || typeof negocioId !== 'number'}
+                          onClick={async () => {
+                            if (typeof negocioId !== 'number') return;
+                            try {
+                              await marcarPagado.mutateAsync({ id: mov.id, negocioId });
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : 'No se pudo marcar como pagado', { duration: 5000 });
+                            }
+                          }}
+                        >
+                          <HandCoins className="mr-2 h-4 w-4" />
+                          Marcar pagado
+                        </Button>
+                      ) : null}
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={isBusy}
+                        onClick={() => {
+                          setCancelarTarget(mov);
+                          setCancelarOpen(true);
+                        }}
+                      >
+                        Cancelar
                       </Button>
                     </div>
                   </TableCell>
@@ -164,6 +227,42 @@ export function AprobacionTable({
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={cancelarOpen} onOpenChange={setCancelarOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar movimiento</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelarTarget
+                ? `Se cancelará "${cancelarTarget.concepto}". Si está PAGADO, se registrará una reversión para revertir el saldo.`
+                : 'Selecciona un movimiento'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button type="button" variant="outline" onClick={() => setCancelarOpen(false)} disabled={cancelarMovimiento.isPending}>
+              Volver
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 text-white hover:bg-red-600/90"
+              disabled={cancelarMovimiento.isPending || !cancelarTarget || typeof negocioId !== 'number'}
+              onClick={async () => {
+                if (!cancelarTarget) return;
+                if (typeof negocioId !== 'number') return;
+                try {
+                  await cancelarMovimiento.mutateAsync({ id: cancelarTarget.id, negocioId });
+                  setCancelarOpen(false);
+                  setCancelarTarget(null);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'No se pudo cancelar el movimiento', { duration: 5000 });
+                }
+              }}
+            >
+              Confirmar cancelación
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="flex items-center justify-between">
         <Button type="button" variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!canPrev}>

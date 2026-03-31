@@ -1,13 +1,14 @@
 import { alias } from 'drizzle-orm/pg-core';
-import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { auditLog } from '@/lib/audit-logger';
-import { cuentasBanco, movimientos, negocios, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
+import { categorias, cuentasBanco, movimientos, negocios, roles, usuarioNegocio, usuarios } from '@/lib/drizzle';
 import { EmailService } from '@/services/email.service';
 import type {
   AprobarMovimientoInput,
   CreateMovimientoInput,
+  EstadoMovimiento,
   Movimiento,
   RechazarMovimientoInput,
   ReenviarMovimientoInput,
@@ -26,7 +27,7 @@ export class MovimientoService {
 
   async listar(filtros: {
     negocioId: number;
-    estado?: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+    estado?: EstadoMovimiento;
     tipo?: TipoMovimiento;
     fechaDesde?: string;
     fechaHasta?: string;
@@ -175,11 +176,54 @@ export class MovimientoService {
       return created;
     }
 
+    const isEfectuado = data.efectuado === true;
+    const fechaPago = isEfectuado ? new Date() : null;
+    const now = new Date();
+
+    let estadoInicial: EstadoMovimiento = isEfectuado ? 'PAGADO' : 'PENDIENTE';
+    let aprobadoPor: number | null = null;
+    let fechaAprobacion: Date | null = null;
+
+    if (!isEfectuado && typeof data.categoriaId === 'number') {
+      const [categoria] = await db
+        .select({
+          requiereAprobacion: categorias.requiereAprobacion,
+          montoMaxSinAprobacion: categorias.montoMaxSinAprobacion,
+        })
+        .from(categorias)
+        .where(
+          and(
+            eq(categorias.id, data.categoriaId),
+            eq(categorias.activa, true),
+            or(isNull(categorias.negocioId), eq(categorias.negocioId, data.negocioId))
+          )
+        )
+        .limit(1);
+
+      if (!categoria) {
+        throw new Error('Categoría no encontrada');
+      }
+
+      if (categoria.requiereAprobacion === false) {
+        estadoInicial = 'APROBADO';
+        aprobadoPor = creadoPor;
+        fechaAprobacion = now;
+      } else if (categoria.montoMaxSinAprobacion !== null) {
+        const max = this.parseNumeric(categoria.montoMaxSinAprobacion);
+        if (typeof max === 'number' && data.monto <= max) {
+          estadoInicial = 'APROBADO';
+          aprobadoPor = creadoPor;
+          fechaAprobacion = now;
+        }
+      }
+    }
+
     const [movimiento] = await db
       .insert(movimientos)
       .values({
         negocioId: data.negocioId,
         centroCostoId: data.centroCostoId || null,
+        categoriaId: typeof data.categoriaId === 'number' ? data.categoriaId : null,
         tipo: data.tipo,
         fecha: data.fecha,
         concepto: data.concepto,
@@ -187,7 +231,12 @@ export class MovimientoService {
         monto: data.monto.toString(),
         cuentaBancoId: data.cuentaBancoId,
         creadoPor,
-        estado: 'PENDIENTE',
+        estado: estadoInicial,
+        aprobadoPor,
+        fechaAprobacion,
+        efectuado: isEfectuado,
+        fechaPago,
+        pagadoPor: isEfectuado ? creadoPor : null,
         version: 1,
       })
       .returning();
@@ -195,7 +244,9 @@ export class MovimientoService {
       throw new Error('No se pudo crear movimiento');
     }
 
-    await this.notificarNuevoMovimiento(movimiento);
+    if (!isEfectuado && movimiento.estado === 'PENDIENTE') {
+      await this.notificarNuevoMovimiento(movimiento);
+    }
 
     void auditLog({
       evento: 'MOVIMIENTO_CREADO',
@@ -216,11 +267,15 @@ export class MovimientoService {
         throw new Error('Traspaso requiere cuenta y negocio de destino');
       }
 
+      const isEfectuado = data.efectuado === true;
+      const fechaPago = isEfectuado ? new Date() : null;
+
       const [salida] = await tx
         .insert(movimientos)
         .values({
           negocioId: data.negocioId,
           centroCostoId: data.centroCostoId || null,
+          categoriaId: null,
           tipo: 'TRASPASO_SALIDA',
           fecha: data.fecha,
           concepto: data.concepto,
@@ -228,7 +283,10 @@ export class MovimientoService {
           monto: data.monto.toString(),
           cuentaBancoId: data.cuentaBancoId,
           creadoPor,
-          estado: 'PENDIENTE',
+          estado: isEfectuado ? 'PAGADO' : 'PENDIENTE',
+          efectuado: isEfectuado,
+          fechaPago,
+          pagadoPor: isEfectuado ? creadoPor : null,
           version: 1,
         })
         .returning();
@@ -241,6 +299,7 @@ export class MovimientoService {
         .values({
           negocioId: data.negocioDestinoId,
           centroCostoId: data.centroCostoId || null,
+          categoriaId: null,
           tipo: 'TRASPASO_ENTRADA',
           fecha: data.fecha,
           concepto: data.concepto,
@@ -248,7 +307,10 @@ export class MovimientoService {
           monto: data.monto.toString(),
           cuentaBancoId: data.cuentaBancoDestinoId,
           creadoPor,
-          estado: 'PENDIENTE',
+          estado: isEfectuado ? 'PAGADO' : 'PENDIENTE',
+          efectuado: isEfectuado,
+          fechaPago,
+          pagadoPor: isEfectuado ? creadoPor : null,
           version: 1,
         })
         .returning();
@@ -264,14 +326,192 @@ export class MovimientoService {
 
       await tx.update(movimientos).set({ traspasoRefId: salida.id }).where(eq(movimientos.id, entrada.id));
 
-      await this.notificarNuevoMovimiento(salida);
-      await this.notificarNuevoMovimiento(entrada);
+      if (!isEfectuado) {
+        await this.notificarNuevoMovimiento(salida);
+        await this.notificarNuevoMovimiento(entrada);
+      }
 
       if (!salidaVinculada) {
         throw new Error('No se pudo vincular movimiento de salida');
       }
 
       return salidaVinculada;
+    });
+  }
+
+  private parseFechaPagoIso(fechaPagoIso?: string): Date {
+    if (!fechaPagoIso) return new Date();
+    const date = new Date(fechaPagoIso);
+    if (Number.isNaN(date.getTime())) {
+      throw new Error('Fecha de pago inválida');
+    }
+    return date;
+  }
+
+  private invertirTipo(tipo: TipoMovimiento): TipoMovimiento {
+    switch (tipo) {
+      case 'INGRESO':
+        return 'EGRESO';
+      case 'EGRESO':
+        return 'INGRESO';
+      case 'TRASPASO_ENTRADA':
+        return 'TRASPASO_SALIDA';
+      case 'TRASPASO_SALIDA':
+        return 'TRASPASO_ENTRADA';
+      default: {
+        // Exhaustividad para TS strict
+        const _exhaustive: never = tipo;
+        return _exhaustive;
+      }
+    }
+  }
+
+  /**
+   * Marca un movimiento APROBADO como PAGADO. En traspasos aplica al espejo (traspasoRefId) en la misma transacción.
+   */
+  async marcarPagado(id: number, usuarioId: number, fechaPagoIso?: string) {
+    return db.transaction(async (tx) => {
+      const [movimiento] = await tx.select().from(movimientos).where(eq(movimientos.id, id)).limit(1);
+      if (!movimiento || !movimiento.activo) {
+        throw new Error('Movimiento no encontrado');
+      }
+      if (movimiento.estado !== 'APROBADO') {
+        throw new Error(`Solo se pueden marcar como pagados movimientos en estado APROBADO (actual: ${movimiento.estado})`);
+      }
+
+      const fechaPago = this.parseFechaPagoIso(fechaPagoIso);
+      const now = new Date();
+
+      const [pagado] = await tx
+        .update(movimientos)
+        .set({
+          estado: 'PAGADO',
+          efectuado: true,
+          fechaPago,
+          pagadoPor: usuarioId,
+          updatedAt: now,
+        })
+        .where(and(eq(movimientos.id, id), eq(movimientos.estado, 'APROBADO')))
+        .returning();
+
+      if (!pagado) {
+        throw new Error('No se pudo marcar como pagado el movimiento');
+      }
+
+      if (movimiento.traspasoRefId) {
+        const [pagadoEspejo] = await tx
+          .update(movimientos)
+          .set({
+            estado: 'PAGADO',
+            efectuado: true,
+            fechaPago,
+            pagadoPor: usuarioId,
+            updatedAt: now,
+          })
+          .where(and(eq(movimientos.id, movimiento.traspasoRefId), eq(movimientos.estado, 'APROBADO')))
+          .returning();
+
+        if (!pagadoEspejo) {
+          throw new Error('No se pudo marcar como pagado el movimiento espejo');
+        }
+      }
+
+      return pagado;
+    });
+  }
+
+  /**
+   * Cancela un movimiento. Si estaba PAGADO crea un movimiento inverso PAGADO (reversión) y luego marca el original como CANCELADO.
+   * En traspasos aplica al espejo (traspasoRefId) dentro de la misma transacción.
+   */
+  async cancelarMovimiento(id: number, usuarioId: number, motivo?: string) {
+    return db.transaction(async (tx) => {
+      const [base] = await tx.select().from(movimientos).where(eq(movimientos.id, id)).limit(1);
+      if (!base || !base.activo) {
+        throw new Error('Movimiento no encontrado');
+      }
+
+      const ids = Array.from(new Set([base.id, base.traspasoRefId].filter((v): v is number => typeof v === 'number')));
+      const items =
+        ids.length > 1
+          ? await tx.select().from(movimientos).where(inArray(movimientos.id, ids))
+          : [base];
+
+      if (items.length !== ids.length) {
+        throw new Error('Movimiento no encontrado');
+      }
+
+      for (const m of items) {
+        if (!m.activo) throw new Error('Movimiento no encontrado');
+        if (m.estado === 'CANCELADO') throw new Error('El movimiento ya está cancelado');
+        if (m.estado === 'RECHAZADO') throw new Error('No se puede cancelar un movimiento rechazado');
+      }
+
+      const now = new Date();
+
+      // 1) Crear reversión (solo para los que ya estaban PAGADO)
+      const inversosPorOriginalId = new Map<number, number>();
+      for (const m of items) {
+        if (m.estado !== 'PAGADO') continue;
+
+        const [inverso] = await tx
+          .insert(movimientos)
+          .values({
+            negocioId: m.negocioId,
+            centroCostoId: m.centroCostoId,
+            tipo: this.invertirTipo(m.tipo as TipoMovimiento),
+            fecha: m.fecha,
+            concepto: `REVERSIÓN - ${m.concepto}`,
+            tercero: m.tercero,
+            monto: m.monto,
+            cuentaBancoId: m.cuentaBancoId,
+            traspasoRefId: null,
+            estado: 'PAGADO',
+            creadoPor: usuarioId,
+            aprobadoPor: null,
+            fechaAprobacion: null,
+            efectuado: true,
+            fechaPago: now,
+            pagadoPor: usuarioId,
+            motivoRechazo: null,
+            version: 1,
+            updatedAt: now,
+            activo: true,
+          })
+          .returning();
+
+        if (!inverso) {
+          throw new Error('No se pudo crear la reversión del movimiento');
+        }
+
+        inversosPorOriginalId.set(m.id, inverso.id);
+      }
+
+      // Si es traspaso y se crearon ambos inversos, vincularlos como espejo.
+      if (items.length === 2) {
+        const a = items[0]!;
+        const b = items[1]!;
+        const invA = inversosPorOriginalId.get(a.id);
+        const invB = inversosPorOriginalId.get(b.id);
+        if (invA && invB) {
+          await tx.update(movimientos).set({ traspasoRefId: invB, updatedAt: now }).where(eq(movimientos.id, invA));
+          await tx.update(movimientos).set({ traspasoRefId: invA, updatedAt: now }).where(eq(movimientos.id, invB));
+        }
+      }
+
+      // 2) Cancelar originales (y espejo si aplica)
+      const cancelIds = items.map((m) => m.id);
+      await tx
+        .update(movimientos)
+        .set({
+          estado: 'CANCELADO',
+          ...(motivo ? { motivoRechazo: motivo } : {}),
+          updatedAt: now,
+        })
+        .where(inArray(movimientos.id, cancelIds));
+
+      const [updatedOriginal] = await tx.select().from(movimientos).where(eq(movimientos.id, id)).limit(1);
+      return updatedOriginal ?? null;
     });
   }
 

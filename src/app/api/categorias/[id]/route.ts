@@ -16,6 +16,12 @@ const actualizarCategoriaSchema = z
   .object({
     nombre: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres').trim().optional(),
     activa: z.boolean().optional(),
+    requiereAprobacion: z.boolean().optional(),
+    montoMaxSinAprobacion: z.string().optional().nullable(),
+  })
+  .refine((data) => data.requiereAprobacion !== false || data.montoMaxSinAprobacion == null, {
+    message: 'montoMaxSinAprobacion debe ser null cuando requiereAprobacion=false',
+    path: ['montoMaxSinAprobacion'],
   })
   .refine((data) => Object.keys(data).length > 0, { message: 'Debe enviar al menos un campo para actualizar' });
 

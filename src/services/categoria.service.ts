@@ -87,12 +87,17 @@ export class CategoriaService {
       throw new Error('Ya existe una categoría con ese nombre');
     }
 
+    const requiereAprobacion = data.requiereAprobacion !== false;
+    const montoMaxSinAprobacion = requiereAprobacion ? (data.montoMaxSinAprobacion ?? null) : null;
+
     const [created] = await db
       .insert(categorias)
       .values({
         nombre,
         tipo: tipoDb,
         negocioId: targetNegocioId,
+        requiereAprobacion,
+        montoMaxSinAprobacion,
       })
       .returning();
 
@@ -146,6 +151,17 @@ export class CategoriaService {
 
     if (typeof data.activa === 'boolean') {
       update.activa = data.activa;
+    }
+
+    if (typeof data.requiereAprobacion === 'boolean') {
+      update.requiereAprobacion = data.requiereAprobacion;
+      if (data.requiereAprobacion === false) {
+        update.montoMaxSinAprobacion = null;
+      }
+    }
+
+    if (data.montoMaxSinAprobacion !== undefined) {
+      update.montoMaxSinAprobacion = update.requiereAprobacion === false ? null : data.montoMaxSinAprobacion;
     }
 
     if (Object.keys(update).length === 0) {

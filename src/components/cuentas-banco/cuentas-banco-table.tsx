@@ -25,6 +25,25 @@ function parseMoney(raw: string | null): number | null {
   return num;
 }
 
+function getDisponibilidadBadge(cuenta: CuentaBancoListItem) {
+  if (cuenta.esGlobal) {
+    return <Badge className="border-indigo-200 bg-indigo-50 text-indigo-700">Global</Badge>;
+  }
+
+  const compartidos = cuenta.negociosCompartidos ?? [];
+  if (compartidos.length > 0) {
+    const includesPrincipal = typeof cuenta.negocioId === 'number' && compartidos.some((r) => r.negocioId === cuenta.negocioId);
+    const adicionales = includesPrincipal ? Math.max(compartidos.length - 1, 0) : compartidos.length;
+    return <Badge className="border-sky-200 bg-sky-50 text-sky-700">{`Compartida (${adicionales})`}</Badge>;
+  }
+
+  return (
+    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700">
+      Exclusiva
+    </Badge>
+  );
+}
+
 export type CuentasBancoTableProps = {
   negocioId: number | null;
   onEdit: (cuenta: CuentaBancoListItem) => void;
@@ -82,6 +101,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
+            <TableHead>Disponibilidad</TableHead>
             <TableHead>Tipo</TableHead>
             <TableHead>Banco</TableHead>
             <TableHead>Titular</TableHead>
@@ -98,6 +118,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
             return (
               <TableRow key={cuenta.id}>
                 <TableCell className="font-medium">{cuenta.nombre}</TableCell>
+                <TableCell>{getDisponibilidadBadge(cuenta)}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{cuenta.tipo}</Badge>
                 </TableCell>

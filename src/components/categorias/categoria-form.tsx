@@ -29,15 +29,11 @@ const createSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres').trim(),
   tipo: z.enum(['ingreso', 'egreso'], { message: 'Tipo debe ser ingreso o egreso' }),
   esGlobal: z.boolean().optional(),
+  requiereAprobacion: z.boolean(),
+  montoMaxSinAprobacion: z.string().optional(),
 });
 
-const updateSchema = z.object({
-  nombre: z.string().min(1, 'El nombre es requerido').max(100, 'Máximo 100 caracteres').trim().optional(),
-  activa: z.boolean().optional(),
-});
-
-type CreateValues = z.infer<typeof createSchema>;
-type UpdateValues = z.infer<typeof updateSchema>;
+type FormValues = z.infer<typeof createSchema>;
 
 type ApiResponse<T> = { success: boolean; data: T };
 
@@ -53,34 +49,52 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
   const isEditing = Boolean(categoria?.id);
   const queryClient = useQueryClient();
 
-  const form = useForm<CreateValues | UpdateValues>({
-    resolver: zodResolver(isEditing ? updateSchema : createSchema),
+  const form = useForm<FormValues, unknown, FormValues>({
+    resolver: zodResolver(createSchema),
     defaultValues: isEditing
       ? {
           nombre: categoria?.nombre ?? '',
+          tipo: toUiTipo(categoria!.tipo),
+          esGlobal: false,
+          requiereAprobacion: categoria?.requiereAprobacion ?? true,
+          montoMaxSinAprobacion: categoria?.montoMaxSinAprobacion ?? '',
         }
       : {
           nombre: '',
           tipo: 'ingreso',
           esGlobal: false,
+          requiereAprobacion: true,
+          montoMaxSinAprobacion: '',
         },
   });
 
   React.useEffect(() => {
     if (isEditing) {
-      form.reset({ nombre: categoria?.nombre ?? '' });
+      form.reset({
+        nombre: categoria?.nombre ?? '',
+        tipo: toUiTipo(categoria!.tipo),
+        esGlobal: false,
+        requiereAprobacion: categoria?.requiereAprobacion ?? true,
+        montoMaxSinAprobacion: categoria?.montoMaxSinAprobacion ?? '',
+      });
       return;
     }
-    form.reset({ nombre: '', tipo: 'ingreso', esGlobal: false });
+    form.reset({ nombre: '', tipo: 'ingreso', esGlobal: false, requiereAprobacion: true, montoMaxSinAprobacion: '' });
   }, [categoria, form, isEditing]);
 
+  const requiereAprobacion = form.watch('requiereAprobacion');
+
   const mutation = useMutation({
-    mutationFn: async (values: CreateValues | UpdateValues) => {
+    mutationFn: async (values: FormValues) => {
       if (isEditing) {
-        const updateValues = values as UpdateValues;
-        const payload: UpdateValues = {};
-        if (typeof updateValues.nombre === 'string') payload.nombre = updateValues.nombre;
-        if (typeof updateValues.activa === 'boolean') payload.activa = updateValues.activa;
+        const payload: Record<string, unknown> = {};
+        payload.nombre = values.nombre;
+        payload.requiereAprobacion = values.requiereAprobacion;
+        payload.montoMaxSinAprobacion = values.requiereAprobacion
+          ? values.montoMaxSinAprobacion?.trim()
+            ? values.montoMaxSinAprobacion
+            : null
+          : null;
 
         return apiFetch<ApiResponse<Categoria>>(`/api/categorias/${categoria!.id}`, {
           method: 'PUT',
@@ -90,9 +104,15 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
       }
 
       const payload: CategoriaFormData = {
-        nombre: (values as CreateValues).nombre,
-        tipo: (values as CreateValues).tipo,
-        esGlobal: rol === 'Dueño' ? (values as CreateValues).esGlobal : undefined,
+        nombre: values.nombre,
+        tipo: values.tipo,
+        esGlobal: rol === 'Dueño' ? values.esGlobal : undefined,
+        requiereAprobacion: values.requiereAprobacion,
+        montoMaxSinAprobacion: values.requiereAprobacion
+          ? values.montoMaxSinAprobacion?.trim()
+            ? values.montoMaxSinAprobacion
+            : null
+          : null,
       };
 
       return apiFetch<ApiResponse<Categoria>>('/api/categorias', {
@@ -116,7 +136,7 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
     return errorMessage;
   }, [errorMessage]);
 
-  const onSubmit = async (values: CreateValues | UpdateValues) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       await mutation.mutateAsync(values);
     } catch (error) {
@@ -188,6 +208,59 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
             )}
           />
         ) : null}
+
+        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
+          <div className="text-sm font-medium text-slate-900">Configuración de aprobación</div>
+
+          <FormField
+            control={form.control}
+            name="requiereAprobacion"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={Boolean(field.value)}
+                    onCheckedChange={(v) => {
+                      const next = v === true;
+                      field.onChange(next);
+                      if (!next) {
+                        form.setValue('montoMaxSinAprobacion', '', { shouldValidate: true });
+                      }
+                    }}
+                    disabled={mutation.isPending}
+                  />
+                  <FormLabel className="mb-0">Requiere aprobación</FormLabel>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {requiereAprobacion ? (
+            <FormField
+              control={form.control}
+              name="montoMaxSinAprobacion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monto máximo sin aprobación (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      placeholder="0.00"
+                      disabled={mutation.isPending}
+                    />
+                  </FormControl>
+                  <div className="text-xs text-slate-600">Movimientos por debajo de este monto se aprobarán automáticamente</div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
+        </div>
 
         {uiError ? <div className="text-sm text-red-600">{uiError}</div> : null}
 

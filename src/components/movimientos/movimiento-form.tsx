@@ -2,11 +2,13 @@
 
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +17,8 @@ import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
 import { useCreateMovimiento, type CreateMovimientoData } from '@/hooks/use-movimientos';
+import { apiFetch } from '@/lib/api-client';
+import type { Categoria } from '@/types/categoria.types';
 
 const schema = z
   .object({
@@ -22,6 +26,7 @@ const schema = z
     tipo: z.enum(['INGRESO', 'EGRESO', 'TRASPASO_SALIDA']),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     concepto: z.string().min(1, 'Concepto requerido'),
+    categoriaId: z.number().optional(),
     tercero: z.string().optional(),
     monto: z
       .string()
@@ -34,6 +39,7 @@ const schema = z
     cuentaBancoDestinoId: z.number().optional(),
     negocioDestinoId: z.number().optional(),
     centroCostoId: z.number().optional(),
+    efectuado: z.boolean(),
   })
   .refine((data) => data.tipo !== 'TRASPASO_SALIDA' || (!!data.cuentaBancoDestinoId && !!data.negocioDestinoId), {
     message: 'Traspaso requiere cuenta y negocio de destino',
@@ -86,20 +92,25 @@ export function MovimientoForm({
 
   const createMovimiento = useCreateMovimiento();
 
-  const form = useForm<Values>({
+  type CategoriasListResponse = { success: boolean; data: Categoria[] };
+
+  const form = useForm<Values, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       negocioId: defaultNegocioId,
       tipo: 'INGRESO',
       fecha: todayISO(),
       concepto: '',
+      categoriaId: undefined,
       tercero: '',
       monto: '',
       cuentaBancoId: undefined as unknown as number,
       cuentaBancoDestinoId: undefined,
       negocioDestinoId: undefined,
+      efectuado: false,
     },
   });
+
 
   React.useEffect(() => {
     if (!user) return;
@@ -112,6 +123,19 @@ export function MovimientoForm({
   const tipo = form.watch('tipo');
   const negocioId = form.watch('negocioId');
   const negocioDestinoId = form.watch('negocioDestinoId');
+  const efectuado = form.watch('efectuado');
+
+  const tipoCategoriaQuery = tipo === 'INGRESO' ? 'ingreso' : tipo === 'EGRESO' ? 'egreso' : null;
+  const categoriasQuery = useQuery({
+    queryKey: ['categorias', negocioId, tipoCategoriaQuery],
+    enabled: typeof negocioId === 'number' && tipoCategoriaQuery !== null,
+    queryFn: async () => {
+      return apiFetch<CategoriasListResponse>(`/api/categorias?tipo=${encodeURIComponent(tipoCategoriaQuery!)}`, {
+        negocioId: typeof negocioId === 'number' ? negocioId : undefined,
+      });
+    },
+  });
+  const categorias = categoriasQuery.data?.data ?? [];
 
   const cuentasOrigenQuery = useCuentasBanco({ negocioId: typeof negocioId === 'number' ? negocioId : null });
   const cuentasDestinoQuery = useCuentasBanco({ negocioId: typeof negocioDestinoId === 'number' ? negocioDestinoId : null });
@@ -128,6 +152,7 @@ export function MovimientoForm({
     if (tipo !== 'TRASPASO_SALIDA') {
       form.setValue('negocioDestinoId', undefined);
       form.setValue('cuentaBancoDestinoId', undefined);
+      form.setValue('categoriaId', undefined);
     }
   }, [form, tipo]);
 
@@ -139,12 +164,14 @@ export function MovimientoForm({
       tipo: values.tipo,
       fecha: values.fecha,
       concepto: values.concepto,
+      categoriaId: values.categoriaId,
       tercero: values.tercero?.trim() ? values.tercero : undefined,
       monto: Number(values.monto),
       cuentaBancoId: values.cuentaBancoId,
       cuentaBancoDestinoId: values.cuentaBancoDestinoId,
       negocioDestinoId: values.negocioDestinoId,
       centroCostoId: values.centroCostoId,
+      efectuado: values.efectuado,
     };
 
     try {
@@ -160,12 +187,14 @@ export function MovimientoForm({
             tipo: 'INGRESO',
             fecha: fechaToKeep,
             concepto: '',
+            categoriaId: undefined,
             tercero: '',
             monto: '',
             cuentaBancoId: cuentaBancoIdToKeep,
             cuentaBancoDestinoId: undefined,
             negocioDestinoId: undefined,
             centroCostoId: undefined,
+            efectuado: false,
           });
         } else {
           form.reset({
@@ -173,12 +202,14 @@ export function MovimientoForm({
             tipo: 'INGRESO',
             fecha: todayISO(),
             concepto: '',
+            categoriaId: undefined,
             tercero: '',
             monto: '',
             cuentaBancoId: undefined as unknown as number,
             cuentaBancoDestinoId: undefined,
             negocioDestinoId: undefined,
             centroCostoId: undefined,
+            efectuado: false,
           });
         }
 
@@ -279,6 +310,38 @@ export function MovimientoForm({
             </FormItem>
           )}
         />
+
+        {tipo !== 'TRASPASO_SALIDA' ? (
+          <FormField
+            control={form.control}
+            name="categoriaId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Categoría (opcional)</FormLabel>
+                <FormControl>
+                  <Select
+                    value={typeof field.value === 'number' ? String(field.value) : '__none__'}
+                    onValueChange={(val) => field.onChange(val === '__none__' ? undefined : Number(val))}
+                    disabled={isSubmitting || categoriasQuery.isLoading || tipoCategoriaQuery === null}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={categoriasQuery.isLoading ? 'Cargando...' : 'Sin categoría'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Sin categoría</SelectItem>
+                      {categorias.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
 
         <FormField
           control={form.control}
@@ -417,6 +480,31 @@ export function MovimientoForm({
         )}
 
         {createMovimiento.error instanceof Error && <div className="text-sm text-red-600">{createMovimiento.error.message}</div>}
+
+        <FormField
+          control={form.control}
+          name="efectuado"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3">
+                  <Checkbox checked={Boolean(field.value)} onCheckedChange={(val) => field.onChange(val === true)} disabled={isSubmitting} />
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-slate-900">Este movimiento ya fue efectuado</div>
+                    <div className="text-xs text-slate-600">Se registrará como PAGADO y afectará el saldo inmediatamente.</div>
+                  </div>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {efectuado ? (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+            Este movimiento se creará directamente como PAGADO y el saldo de la cuenta se actualizará de inmediato.
+          </div>
+        ) : null}
 
         <SheetFooter className="mt-6">
           {typeof onCancel === 'function' ? (

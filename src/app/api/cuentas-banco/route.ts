@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { authenticateRequest, unauthorizedResponse } from '@/middleware/auth-middleware';
@@ -13,9 +13,17 @@ const createCuentaBancoSchema = z.object({
   tipo: z.enum(['EFECTIVO', 'BANCARIA', 'CAJA_CHICA']),
   bancoInstitucion: z.string().optional(),
   titular: z.string().optional(),
-  negocioId: z.number().positive('Negocio requerido'),
+  negocioId: z.number().positive('Negocio requerido').optional().nullable(),
+  esGlobal: z.boolean().optional().default(false),
+  negociosCompartidos: z.array(z.number().positive()).optional(),
   saldoInicial: z.number().min(0).optional(),
-});
+}).refine(
+  (data) => {
+    if (data.esGlobal) return true;
+    return (data.negocioId != null) || (data.negociosCompartidos && data.negociosCompartidos.length > 0);
+  },
+  { message: 'Debe especificar al menos un negocio o marcar la cuenta como global' }
+);
 
 function handleServiceError(error: unknown): NextResponse {
   if (error instanceof TenantError) {
@@ -89,8 +97,21 @@ export async function POST(request: Request) {
     const body: unknown = await request.json();
     const validated = createCuentaBancoSchema.parse(body);
 
-    if (auth.user!.rol !== 'Dueño' && !auth.user!.negocios.includes(validated.negocioId)) {
-      return forbiddenResponse('No tienes acceso a este negocio');
+    if (validated.esGlobal && auth.user!.rol !== 'Dueño') {
+      return forbiddenResponse('Solo el Dueño puede crear cuentas globales');
+    }
+
+    if (auth.user!.rol !== 'Dueño') {
+      if (validated.negocioId != null && !auth.user!.negocios.includes(validated.negocioId)) {
+        return forbiddenResponse('No tienes acceso al negocio principal');
+      }
+      if (validated.negociosCompartidos) {
+        for (const nId of validated.negociosCompartidos) {
+          if (!auth.user!.negocios.includes(nId)) {
+            return forbiddenResponse('No tienes acceso a uno o más negocios compartidos');
+          }
+        }
+      }
     }
 
     const cuenta = await cuentaBancoService.crear(validated);
