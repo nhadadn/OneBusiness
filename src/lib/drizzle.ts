@@ -126,7 +126,7 @@ export const usuarioNegocioRelations = relations(usuarioNegocio, ({ one }) => ({
 
 export const tipoCuentaEnum = pgEnum('tipo_cuenta', ['EFECTIVO', 'BANCARIA', 'CAJA_CHICA']);
 export const tipoMovimientoEnum = pgEnum('tipo_movimiento', ['INGRESO', 'EGRESO', 'TRASPASO_SALIDA', 'TRASPASO_ENTRADA']);
-export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO']);
+export const estadoMovimientoEnum = pgEnum('estado_movimiento', ['PENDIENTE', 'APROBADO', 'RECHAZADO', 'PAGADO', 'CANCELADO']);
 export const tipoCategoriaEnum = pgEnum('tipo_categoria', ['INGRESO', 'EGRESO']);
 export const estadoCotizacionEnum = pgEnum('estado_cotizacion', ['BORRADOR', 'ENVIADA', 'APROBADA', 'FACTURADA', 'CANCELADA']);
 
@@ -197,6 +197,9 @@ export const movimientos = pgTable('movimientos', {
   creadoPor: integer('creado_por').notNull().references(() => usuarios.id),
   aprobadoPor: integer('aprobado_por').references(() => usuarios.id),
   fechaAprobacion: timestamp('fecha_aprobacion'),
+  efectuado: boolean('efectuado').notNull().default(false),
+  fechaPago: timestamp('fecha_pago'),
+  pagadoPor: integer('pagado_por').references(() => usuarios.id),
   motivoRechazo: text('motivo_rechazo'),
   version: integer('version').notNull().default(1),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -211,6 +214,7 @@ export const movimientos = pgTable('movimientos', {
     cuentaBancoIdx: index('idx_movimientos_cuenta_banco').on(table.cuentaBancoId),
     creadoPorIdx: index('idx_movimientos_creado_por').on(table.creadoPor),
     aprobadoPorIdx: index('idx_movimientos_aprobado_por').on(table.aprobadoPor),
+    pagadoPorIdx: index('idx_movimientos_pagado_por').on(table.pagadoPor),
     traspasoRefIdx: index('idx_movimientos_traspaso_id').on(table.traspasoRefId),
     traspasoRefFk: foreignKey({
       columns: [table.traspasoRefId],
@@ -312,6 +316,11 @@ export const movimientosRelations = relations(movimientos, ({ one }) => ({
     fields: [movimientos.aprobadoPor],
     references: [usuarios.id],
     relationName: 'movimientos_aprobados',
+  }),
+  pagadoPorUsuario: one(usuarios, {
+    fields: [movimientos.pagadoPor],
+    references: [usuarios.id],
+    relationName: 'movimientos_pagados',
   }),
   traspasoRef: one(movimientos, {
     fields: [movimientos.traspasoRefId],

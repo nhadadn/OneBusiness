@@ -1,5 +1,5 @@
 export type TipoMovimiento = 'INGRESO' | 'EGRESO' | 'TRASPASO_SALIDA' | 'TRASPASO_ENTRADA';
-export type EstadoMovimiento = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+export type EstadoMovimiento = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'PAGADO' | 'CANCELADO';
 
 export interface Movimiento {
   id: number;
@@ -16,6 +16,9 @@ export interface Movimiento {
   creadoPor: number;
   aprobadoPor: number | null;
   fechaAprobacion: Date | null;
+  efectuado: boolean;
+  fechaPago: Date | null;
+  pagadoPor: number | null;
   motivoRechazo: string | null;
   version: number;
   activo: boolean;
@@ -34,6 +37,7 @@ export interface CreateMovimientoInput {
   cuentaBancoId: number;
   cuentaBancoDestinoId?: number;
   negocioDestinoId?: number;
+  efectuado?: boolean;
 }
 
 export interface UpdateMovimientoInput {
@@ -58,6 +62,10 @@ export interface RechazarMovimientoInput {
 export interface ReenviarMovimientoInput {
   movimientoId: number;
   cambios: UpdateMovimientoInput;
+}
+
+export interface MarcarPagadoInput {
+  fechaPago?: string;
 }
 
 export interface MovimientosPendientesCount {
