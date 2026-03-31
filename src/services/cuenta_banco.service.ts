@@ -1,4 +1,4 @@
-import { and, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db'; 
 import { cuentaNegocio, cuentasBanco, movimientos, negocios } from '@/lib/drizzle';
@@ -378,7 +378,19 @@ export class CuentaBancoService {
           lte(movimientos.fecha, fechaCorte)
         )
       )
-      .where(and(eq(cuentasBanco.negocioId, negocioId), eq(cuentasBanco.activo, true)))
+      .where(
+        and(
+          eq(cuentasBanco.activo, true),
+          or(
+            eq(cuentasBanco.negocioId, negocioId),
+            eq(cuentasBanco.esGlobal, true),
+            inArray(
+              cuentasBanco.id,
+              db.select({ id: cuentaNegocio.cuentaId }).from(cuentaNegocio).where(eq(cuentaNegocio.negocioId, negocioId))
+            )
+          )
+        )
+      )
       .groupBy(
         cuentasBanco.id,
         cuentasBanco.nombre,
