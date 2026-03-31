@@ -43,13 +43,15 @@ function formatDateDMY(value: string) {
   return `${d}/${m}/${y}`;
 }
 
-type EstadoTabKey = 'all' | 'approved' | 'pending' | 'rejected';
+type EstadoTabKey = 'all' | 'approved' | 'pending' | 'rejected' | 'paid' | 'canceled';
 type PeriodPreset = 'this_month' | 'last_month' | 'last_3_months' | 'custom';
 
 function getEstadoFromTab(tab: EstadoTabKey): EstadoMovimiento | undefined {
   if (tab === 'approved') return 'APROBADO';
   if (tab === 'pending') return 'PENDIENTE';
   if (tab === 'rejected') return 'RECHAZADO';
+  if (tab === 'paid') return 'PAGADO';
+  if (tab === 'canceled') return 'CANCELADO';
   return undefined;
 }
 
@@ -333,9 +335,11 @@ export default function MovimientosPage() {
                 {(
                   [
                     { key: 'all', label: 'Todos' },
+                    { key: 'paid', label: 'Pagados' },
                     { key: 'approved', label: 'Aprobados' },
                     { key: 'pending', label: 'Pendientes' },
                     { key: 'rejected', label: 'Rechazados' },
+                    { key: 'canceled', label: 'Cancelados' },
                   ] as const
                 ).map((tab) => (
                   <Button
