@@ -96,19 +96,19 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-md border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
-            <TableHead>Disponibilidad</TableHead>
             <TableHead>Tipo</TableHead>
-            <TableHead>Banco</TableHead>
-            <TableHead>Titular</TableHead>
-            <TableHead className="text-right">Saldo inicial</TableHead>
+            <TableHead className="hidden sm:table-cell">Disponibilidad</TableHead>
+            <TableHead className="hidden sm:table-cell">Banco</TableHead>
+            <TableHead className="hidden sm:table-cell">Titular</TableHead>
+            <TableHead className="hidden sm:table-cell text-right">Saldo inicial</TableHead>
             <TableHead className="text-right">Saldo real</TableHead>
-            <TableHead>Estado</TableHead>
-            {canManage && <TableHead className="w-[160px]">Acciones</TableHead>}
+            <TableHead className="hidden sm:table-cell">Estado</TableHead>
+            {canManage && <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -118,19 +118,19 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
             return (
               <TableRow key={cuenta.id}>
                 <TableCell className="font-medium">{cuenta.nombre}</TableCell>
-                <TableCell>{getDisponibilidadBadge(cuenta)}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{cuenta.tipo}</Badge>
                 </TableCell>
-                <TableCell>{cuenta.bancoInstitucion ?? '—'}</TableCell>
-                <TableCell>{cuenta.titular ?? '—'}</TableCell>
-                <TableCell className="text-right font-mono">{formatCurrency(saldoInicial)}</TableCell>
+                <TableCell className="hidden sm:table-cell">{getDisponibilidadBadge(cuenta)}</TableCell>
+                <TableCell className="hidden sm:table-cell">{cuenta.bancoInstitucion ?? '—'}</TableCell>
+                <TableCell className="hidden sm:table-cell">{cuenta.titular ?? '—'}</TableCell>
+                <TableCell className="hidden sm:table-cell text-right font-mono">{formatCurrency(saldoInicial)}</TableCell>
                 <TableCell className="text-right font-mono">{saldoReal === null ? '—' : formatCurrency(saldoReal)}</TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <Badge variant={cuenta.activo ? 'default' : 'secondary'}>{cuenta.activo ? 'Activa' : 'Inactiva'}</Badge>
                 </TableCell>
                 {canManage && (
-                  <TableCell>
+                  <TableCell className="px-2 sm:px-4">
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost" onClick={() => onEdit(cuenta)}>
                         <Pencil className="h-4 w-4" />

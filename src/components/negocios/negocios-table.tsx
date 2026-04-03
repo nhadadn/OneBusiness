@@ -53,16 +53,16 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
 
   return (
     <>
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead>Rubro</TableHead>
-              <TableHead>RFC</TableHead>
+              <TableHead className="hidden sm:table-cell">Rubro</TableHead>
+              <TableHead className="hidden sm:table-cell">RFC</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Umbrales</TableHead>
-              {canManage ? <TableHead className="w-[140px]">Acciones</TableHead> : null}
+              <TableHead className="hidden sm:table-cell">Umbrales</TableHead>
+              {canManage ? <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -71,8 +71,8 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
               return (
                 <TableRow key={negocio.id}>
                   <TableCell className="font-medium">{negocio.nombre}</TableCell>
-                  <TableCell>{negocio.rubro?.trim() ? negocio.rubro : '—'}</TableCell>
-                  <TableCell>{negocio.rfc?.trim() ? negocio.rfc : '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{negocio.rubro?.trim() ? negocio.rubro : '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{negocio.rfc?.trim() ? negocio.rfc : '—'}</TableCell>
                   <TableCell>
                     {negocio.activo ? (
                       <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Activo</Badge>
@@ -80,9 +80,11 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                       <Badge variant="secondary">Inactivo</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="font-mono">{umbralAlerta === null ? '—' : formatCurrencyMXN(umbralAlerta)}</TableCell>
+                  <TableCell className="hidden sm:table-cell font-mono">
+                    {umbralAlerta === null ? '—' : formatCurrencyMXN(umbralAlerta)}
+                  </TableCell>
                   {canManage ? (
-                    <TableCell>
+                    <TableCell className="px-2 sm:px-4">
                       <div className="flex gap-2">
                         <Button size="sm" variant="ghost" onClick={() => onEdit(negocio)}>
                           <Pencil className="h-4 w-4" />

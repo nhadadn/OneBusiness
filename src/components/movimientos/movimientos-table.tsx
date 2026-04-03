@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -377,18 +377,18 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Fecha</TableHead>
               <TableHead>Concepto</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Cuenta bancaria</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
+              <TableHead className="hidden sm:table-cell">Cuenta bancaria</TableHead>
+              <TableHead className="hidden sm:table-cell">Tipo</TableHead>
               <TableHead className="text-right">Monto</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead className="w-[220px]">Acciones</TableHead>
+              <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -403,9 +403,9 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                 <TableRow key={mov.id}>
                   <TableCell className="whitespace-nowrap">{formatDateDMY(mov.fecha)}</TableCell>
                   <TableCell className="font-medium">{mov.concepto}</TableCell>
-                  <TableCell className="text-slate-700">{mov.tercero ?? '—'}</TableCell>
-                  <TableCell className="text-slate-700">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell text-slate-700">{mov.tercero ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-slate-700">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap items-center gap-2">
                       {getTipoBadge(mov.tipo)}
                       {typeof mov.traspasoRefId === 'number' ? getTraspasoBadge(mov.traspasoRefId) : null}
@@ -415,7 +415,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                   <TableCell>
                     <EstadoBadge estado={mov.estado} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2 sm:px-4">
                     <div className="flex items-center gap-2">
                       {canApproveReject && (
                         <Button
