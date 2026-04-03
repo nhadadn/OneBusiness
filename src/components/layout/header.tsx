@@ -141,13 +141,12 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
           </Button>
 
           <Button
-            variant="ghost"
+            variant="default"
             onClick={onNewMovimiento}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
           >
             <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Nuevo movimiento</span>
-            <span className="sm:hidden">Nuevo</span>
+            <span className="sm:hidden">Movimiento</span>
           </Button>
         </div>
       ) : null}
