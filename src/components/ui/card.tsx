@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 export type CardProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Card({ className, ...props }: CardProps) {
-  return <div className={cn('rounded-lg border border-slate-200 bg-white shadow-sm', className)} {...props} />;
+  return <div className={cn('rounded-lg border border-border bg-card text-card-foreground shadow-sm', className)} {...props} />;
 }
 
 export function CardHeader({ className, ...props }: CardProps) {
@@ -19,7 +19,7 @@ export function CardTitle({ className, ...props }: CardProps) {
 }
 
 export function CardDescription({ className, ...props }: CardProps) {
-  return <p className={cn('text-sm text-slate-600', className)} {...props} />;
+  return <p className={cn('text-sm text-muted-foreground', className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: CardProps) {
