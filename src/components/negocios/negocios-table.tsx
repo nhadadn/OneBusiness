@@ -86,12 +86,12 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                   {canManage ? (
                     <TableCell className="px-2 sm:px-4">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => onEdit(negocio)}>
+                        <Button size="sm" variant="outline" onClick={() => onEdit(negocio)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
+                          variant="destructive"
                           onClick={() => {
                             setEliminarTarget(negocio);
                             setEliminarOpen(true);
@@ -126,7 +126,7 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
             </Button>
             <Button
               type="button"
-              className="bg-red-600 hover:bg-red-600/90"
+              variant="destructive"
               disabled={eliminar.isPending || !eliminarTarget}
               onClick={async () => {
                 if (!eliminarTarget) return;

@@ -10,7 +10,8 @@ import { CategoriaForm } from '@/components/categorias/categoria-form';
 import { CategoriasTable } from '@/components/categorias/categorias-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { ConfigListLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -89,7 +90,7 @@ export default function CategoriasPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <ConfigListLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
@@ -122,34 +123,33 @@ export default function CategoriasPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Categorías</h1>
-          <p className="text-slate-600">Gestiona las categorías de movimientos</p>
-        </div>
+      <PageHeader
+        title="Categorías"
+        description="Gestiona las categorías de movimientos"
+        action={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Seleccionar negocio" />
+              </SelectTrigger>
+              <SelectContent>
+                {negocioOptions.map((opt) => (
+                  <SelectItem key={opt.id} value={String(opt.id)}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
-            <SelectTrigger className="w-[240px]">
-              <SelectValue placeholder="Seleccionar negocio" />
-            </SelectTrigger>
-            <SelectContent>
-              {negocioOptions.map((opt) => (
-                <SelectItem key={opt.id} value={String(opt.id)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {user.rol !== 'Externo' && (
-            <Button onClick={handleNueva} disabled={typeof negocioId !== 'number'}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Categoría
-            </Button>
-          )}
-        </div>
-      </div>
+            {user.rol !== 'Externo' && (
+              <Button variant="default" onClick={handleNueva} disabled={typeof negocioId !== 'number'}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva Categoría
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       <div className="flex flex-wrap gap-2">
         <Button variant={filtroTipo === 'todas' ? 'default' : 'outline'} onClick={() => setFiltroTipo('todas')}>
@@ -170,7 +170,7 @@ export default function CategoriasPage() {
           description="Selecciona un negocio para ver sus categorías."
         />
       ) : categoriasQuery.isLoading ? (
-        <ConfigListLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       ) : categoriasQuery.error instanceof Error ? (
         <ErrorState message={categoriasQuery.error.message} onRetry={() => categoriasQuery.refetch()} />
       ) : categorias.length === 0 ? (

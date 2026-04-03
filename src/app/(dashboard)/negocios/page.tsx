@@ -6,7 +6,8 @@ import { Plus } from 'lucide-react';
 
 import { NegocioDialog } from '@/components/negocios/negocio-dialog';
 import { NegociosTable } from '@/components/negocios/negocios-table';
-import { ConfigListLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
@@ -52,7 +53,7 @@ export default function NegociosPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <ConfigListLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
@@ -73,38 +74,37 @@ export default function NegociosPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Negocios</h1>
-          <p className="text-slate-600">Gestiona negocios y su configuración</p>
-        </div>
+      <PageHeader
+        title="Negocios"
+        description="Gestiona negocios y su configuración"
+        action={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {!isOwner && negocioOptions.length > 1 ? (
+              <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
+                <SelectTrigger className="w-[240px]">
+                  <SelectValue placeholder="Seleccionar negocio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {negocioOptions.map((opt) => (
+                    <SelectItem key={opt.id} value={String(opt.id)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : null}
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {!isOwner && negocioOptions.length > 1 ? (
-            <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
-              <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Seleccionar negocio" />
-              </SelectTrigger>
-              <SelectContent>
-                {negocioOptions.map((opt) => (
-                  <SelectItem key={opt.id} value={String(opt.id)}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : null}
+            {isOwner ? (
+              <Button variant="default" onClick={handleCreate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nuevo negocio
+              </Button>
+            ) : null}
+          </div>
+        }
+      />
 
-          {isOwner ? (
-            <Button onClick={handleCreate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nuevo negocio
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
-      {negociosQuery.isLoading ? <ConfigListLoader /> : null}
+      {negociosQuery.isLoading ? <LoadingSkeleton variant="table" rows={5} /> : null}
       {negociosQuery.error instanceof Error ? (
         <div className="text-sm text-red-600">{negociosQuery.error.message}</div>
       ) : null}

@@ -94,7 +94,7 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
                     <div className="flex gap-2">
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => onEditar(categoria)}
                         disabled={!canEditThis}
                         aria-label="Editar categoría"
@@ -103,7 +103,7 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="destructive"
                         onClick={() => onDesactivar(categoria.id)}
                         disabled={!canEditThis}
                         aria-label="Desactivar categoría"

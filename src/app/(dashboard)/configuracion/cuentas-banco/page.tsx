@@ -7,7 +7,8 @@ import { Plus } from 'lucide-react';
 import { CuentaBancoDialog } from '@/components/cuentas-banco/cuenta-banco-dialog';
 import { CuentasBancoTable } from '@/components/cuentas-banco/cuentas-banco-table';
 import { SaldoRealDialog } from '@/components/cuentas-banco/saldo-real-dialog';
-import { ConfigListLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
@@ -59,7 +60,7 @@ export default function CuentasBancoPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <ConfigListLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
@@ -83,34 +84,33 @@ export default function CuentasBancoPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Cuentas banco</h1>
-          <p className="text-slate-600">Gestiona cuentas bancarias y saldos por negocio</p>
-        </div>
+      <PageHeader
+        title="Cuentas Bancarias"
+        description="Gestiona cuentas bancarias y saldos por negocio"
+        action={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
+              <SelectTrigger className="w-[240px]">
+                <SelectValue placeholder="Seleccionar negocio" />
+              </SelectTrigger>
+              <SelectContent>
+                {negocioOptions.map((opt) => (
+                  <SelectItem key={opt.id} value={String(opt.id)}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
-            <SelectTrigger className="w-[240px]">
-              <SelectValue placeholder="Seleccionar negocio" />
-            </SelectTrigger>
-            <SelectContent>
-              {negocioOptions.map((opt) => (
-                <SelectItem key={opt.id} value={String(opt.id)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {canManage && (
-            <Button onClick={handleCreate} disabled={typeof negocioId !== 'number'}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva cuenta
-            </Button>
-          )}
-        </div>
-      </div>
+            {canManage && (
+              <Button variant="default" onClick={handleCreate} disabled={typeof negocioId !== 'number'}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva cuenta
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       <CuentasBancoTable negocioId={negocioId} onEdit={handleEdit} onEditSaldo={handleEditSaldo} onCreate={handleCreate} />
 

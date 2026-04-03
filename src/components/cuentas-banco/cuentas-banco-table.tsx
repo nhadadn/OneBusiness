@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { ConfigListLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -83,7 +83,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
   }
 
   if (query.isLoading) {
-    return <ConfigListLoader />;
+    return <LoadingSkeleton variant="table" rows={5} />;
   }
 
   if (query.error instanceof Error) {
@@ -138,7 +138,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
                 {canManage && (
                   <TableCell className="px-2 sm:px-4">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => onEdit(cuenta)}>
+                      <Button size="sm" variant="outline" onClick={() => onEdit(cuenta)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => onEditSaldo(cuenta)}>
@@ -146,7 +146,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
                       </Button>
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="destructive"
                         onClick={() => handleDelete(cuenta)}
                         disabled={deleteCuenta.isPending}
                       >

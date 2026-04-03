@@ -278,7 +278,7 @@ export function NegocioForm({ negocio, onSuccess }: NegocioFormProps) {
 
         <div className="flex justify-end gap-2">
           <Button type="submit" disabled={isSubmitting}>
-            {isEditing ? 'Guardar cambios' : 'Crear negocio'}
+            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear negocio'}
           </Button>
         </div>
       </form>
