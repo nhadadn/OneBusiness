@@ -76,6 +76,8 @@ export default function ArqueoConfigPage() {
   if (!user) return null;
   if (user.rol !== 'Dueño' && user.rol !== 'Admin') return null;
 
+  const needsInitialSelection = negocioOptions.length > 0 && typeof negocioId !== 'number';
+
   return (
     <div className="container mx-auto space-y-6 py-6">
       <PageHeader
@@ -113,7 +115,9 @@ export default function ArqueoConfigPage() {
         }
       />
 
-      {typeof negocioId !== 'number' ? (
+      {needsInitialSelection ? (
+        <LoadingSkeleton variant="table" rows={5} />
+      ) : typeof negocioId !== 'number' ? (
         <EmptyState
           icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
           title="Sin negocio seleccionado"

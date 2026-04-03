@@ -98,6 +98,7 @@ export default function CategoriasPage() {
   if (user.rol === 'Externo') return null;
 
   const categorias = categoriasQuery.data?.data ?? [];
+  const needsInitialSelection = negocioOptions.length > 0 && typeof negocioId !== 'number';
 
   const handleNueva = () => {
     setCategoriaEditando(null);
@@ -163,7 +164,9 @@ export default function CategoriasPage() {
         </Button>
       </div>
 
-      {typeof negocioId !== 'number' ? (
+      {needsInitialSelection ? (
+        <LoadingSkeleton variant="table" rows={5} />
+      ) : typeof negocioId !== 'number' ? (
         <EmptyState
           icon={<Tags className="h-12 w-12 text-muted-foreground" />}
           title="Sin negocio seleccionado"

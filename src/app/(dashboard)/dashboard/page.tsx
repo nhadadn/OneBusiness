@@ -190,12 +190,12 @@ export default function DashboardPage() {
 
   const [period, setPeriod] = React.useState<PeriodKey>('este_mes');
   const [globalData, setGlobalData] = React.useState<DashboardResumenGlobalResponse['data'] | null>(null);
-  const [globalLoading, setGlobalLoading] = React.useState(false);
+  const [globalLoading, setGlobalLoading] = React.useState(true);
   const [globalError, setGlobalError] = React.useState<string | null>(null);
 
   const [operativoResumen, setOperativoResumen] = React.useState<ResumenNegocio | null>(null);
   const [operativoMovs, setOperativoMovs] = React.useState<MovimientosListItem[]>([]);
-  const [operativoLoading, setOperativoLoading] = React.useState(false);
+  const [operativoLoading, setOperativoLoading] = React.useState(true);
   const [operativoError, setOperativoError] = React.useState<string | null>(null);
 
   const [umbralesDialog, setUmbralesDialog] = React.useState<{ open: boolean; negocio: ResumenNegocio | null }>({

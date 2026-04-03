@@ -82,6 +82,8 @@ export default function CuentasBancoPage() {
     setSaldoDialogOpen(true);
   };
 
+  const needsInitialSelection = negocioOptions.length > 0 && typeof negocioId !== 'number';
+
   return (
     <div className="container mx-auto space-y-6 py-6">
       <PageHeader
@@ -112,7 +114,11 @@ export default function CuentasBancoPage() {
         }
       />
 
-      <CuentasBancoTable negocioId={negocioId} onEdit={handleEdit} onEditSaldo={handleEditSaldo} onCreate={handleCreate} />
+      {needsInitialSelection ? (
+        <LoadingSkeleton variant="table" rows={5} />
+      ) : (
+        <CuentasBancoTable negocioId={negocioId} onEdit={handleEdit} onEditSaldo={handleEditSaldo} onCreate={handleCreate} />
+      )}
 
       <CuentaBancoDialog open={dialogOpen} onOpenChange={setDialogOpen} cuenta={selectedCuenta} negocioId={negocioId} />
 
