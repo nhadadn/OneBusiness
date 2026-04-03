@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -28,10 +29,6 @@ type CategoriaListItem = {
   id: number;
   nombre: string;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -122,7 +119,7 @@ export function FacturarCotizacionDialog({
 
   const totalLabel = useMemo(() => {
     if (!cotizacion) return '';
-    return formatCurrencyMXN(parseMoney(cotizacion.total));
+    return formatCurrency(parseMoney(cotizacion.total));
   }, [cotizacion]);
 
   const confirmDisabled = useMemo(() => {

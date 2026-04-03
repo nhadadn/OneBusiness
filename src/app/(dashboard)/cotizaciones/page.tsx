@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { EstadoCotizacion } from '@/types/cotizacion.types';
@@ -39,10 +40,6 @@ function formatDateDMY(value: string) {
 function parseMoney(raw: string) {
   const num = Number(raw);
   return Number.isFinite(num) && !Number.isNaN(num) ? num : 0;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 type PeriodPreset = 'all' | 'this_month' | 'last_month' | 'last_3_months' | 'this_year';
@@ -413,7 +410,7 @@ export default function CotizacionesPage() {
             </TableHeader>
             <TableBody>
               {items.map((row) => {
-                const totalLabel = formatCurrencyMXN(parseMoney(row.total));
+                const totalLabel = formatCurrency(parseMoney(row.total));
                 return (
                   <TableRow
                     key={row.id}

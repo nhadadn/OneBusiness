@@ -2,14 +2,11 @@
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
+import { formatCurrency } from '@/lib/format';
 import { negocios, usuarios } from '@/lib/drizzle';
 import type { Movimiento } from '@/types/movimiento.types';
 
 type EmailPersona = { email: string; nombre: string };
-
-function formatCurrencyMXN(value: number): string {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function formatDate(value: unknown): string {
   const date = value instanceof Date ? value : new Date(String(value));
@@ -64,7 +61,7 @@ export class EmailService {
     movimiento: Movimiento;
     extraHtml?: string;
   }): string {
-    const monto = formatCurrencyMXN(parseFloat(params.movimiento.monto || '0'));
+    const monto = formatCurrency(parseFloat(params.movimiento.monto || '0'));
     const fecha = formatDate(params.movimiento.fecha);
     const url = this.getMovimientoUrl(params.movimiento.id);
 
@@ -93,7 +90,7 @@ export class EmailService {
     if (!resend) return;
 
     const nombreNegocio = await this.obtenerNombreNegocio(movimiento.negocioId);
-    const subject = `Nueva solicitud de aprobación - ${movimiento.concepto} - ${formatCurrencyMXN(parseFloat(movimiento.monto || '0'))}`;
+    const subject = `Nueva solicitud de aprobación - ${movimiento.concepto} - ${formatCurrency(parseFloat(movimiento.monto || '0'))}`;
 
     await Promise.all(
       aprobadores.map((aprobador) =>
@@ -120,7 +117,7 @@ export class EmailService {
     if (!creador) return;
 
     const nombreNegocio = await this.obtenerNombreNegocio(movimiento.negocioId);
-    const subject = `✅ Movimiento aprobado - ${movimiento.concepto} - ${formatCurrencyMXN(parseFloat(movimiento.monto || '0'))}`;
+    const subject = `✅ Movimiento aprobado - ${movimiento.concepto} - ${formatCurrency(parseFloat(movimiento.monto || '0'))}`;
 
     await resend.emails.send({
       from: this.getFromEmail(),

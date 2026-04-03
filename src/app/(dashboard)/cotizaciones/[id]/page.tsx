@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { Categoria } from '@/types/categoria.types';
@@ -99,10 +100,6 @@ function round2(value: number) {
 function parseMoney(raw: unknown) {
   const num = typeof raw === 'number' ? raw : Number(raw);
   return Number.isFinite(num) && !Number.isNaN(num) ? num : 0;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function formatDateDMY(value: string) {
@@ -510,9 +507,9 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                           <TableCell className="text-sm text-muted-foreground">{item.unidadMedida?.trim() ? item.unidadMedida : '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm">{item.cantidad ? parseMoney(item.cantidad).toString() : '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {item.precioUnitario ? formatCurrencyMXN(parseMoney(item.precioUnitario)) : '—'}
+                            {item.precioUnitario ? formatCurrency(parseMoney(item.precioUnitario)) : '—'}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{formatCurrencyMXN(parseMoney(item.importe))}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{formatCurrency(parseMoney(item.importe))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -522,15 +519,15 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                 <div className="space-y-1 text-right text-sm">
                   <div className="flex justify-end gap-3">
                     <div className="text-muted-foreground">Subtotal:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.subtotal)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.subtotal)}</div>
                   </div>
                   <div className="flex justify-end gap-3">
                     <div className="text-muted-foreground">IVA 16%:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.iva)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.iva)}</div>
                   </div>
                   <div className="flex justify-end gap-3 font-semibold">
                     <div>Total:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.total)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.total)}</div>
                   </div>
                 </div>
               </div>

@@ -10,13 +10,10 @@ import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/hooks/use-auth';
 import { useCuentasBanco, useDeleteCuentaBanco } from '@/hooks/use-cuentas-banco';
 import type { CuentaBancoListItem } from '@/hooks/use-cuentas-banco';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
-}
 
 function parseMoney(raw: string | null): number | null {
   if (!raw) return null;

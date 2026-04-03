@@ -6,6 +6,7 @@ import { EstadoBadge } from '@/components/movimientos/estado-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { formatCurrency } from '@/lib/format';
 import { useMovimientoDetalle } from '@/hooks/use-movimientos';
 import type { MovimientoDetalle } from '@/hooks/use-movimientos';
 import type { TipoMovimiento } from '@/types/movimiento.types';
@@ -19,10 +20,6 @@ export type MovimientoDetalleSheetProps = {
   onRechazar?: () => void;
   canManage: boolean;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -74,7 +71,7 @@ export function MovimientoDetalleSheet({
   const movimiento: MovimientoDetalle | null = query.data?.data ?? null;
 
   const showActions = canManage && movimiento?.estado === 'PENDIENTE';
-  const monto = movimiento ? formatCurrencyMXN(parseMoney(movimiento.monto)) : '';
+  const monto = movimiento ? formatCurrency(parseMoney(movimiento.monto)) : '';
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

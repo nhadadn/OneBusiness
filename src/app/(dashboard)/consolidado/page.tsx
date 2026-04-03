@@ -9,7 +9,8 @@ import { ConsolidadoPorNegocio } from '@/components/consolidado/consolidado-por-
 import { ConsolidadoResumen } from '@/components/consolidado/consolidado-resumen';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { DashboardGlobalLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useConsolidado } from '@/hooks/use-consolidado';
 
@@ -31,7 +32,7 @@ export default function ConsolidadoPage() {
   if (authLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <DashboardGlobalLoader />
+        <LoadingSkeleton variant="card" />
       </div>
     );
   }
@@ -41,7 +42,7 @@ export default function ConsolidadoPage() {
   if (!isOwner) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <DashboardGlobalLoader />
+        <LoadingSkeleton variant="card" />
       </div>
     );
   }
@@ -49,11 +50,8 @@ export default function ConsolidadoPage() {
   if (consolidado.query.isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div>
-          <h1 className="text-3xl font-bold">Consolidado</h1>
-          <p className="text-slate-600">Vista consolidada por negocio con saldos al corte</p>
-        </div>
-        <DashboardGlobalLoader />
+        <PageHeader title="Consolidado" />
+        <LoadingSkeleton variant="card" />
       </div>
     );
   }
@@ -61,10 +59,7 @@ export default function ConsolidadoPage() {
   if (consolidado.query.isError) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div>
-          <h1 className="text-3xl font-bold">Consolidado</h1>
-          <p className="text-slate-600">Vista consolidada por negocio con saldos al corte</p>
-        </div>
+        <PageHeader title="Consolidado" />
         <ErrorState
           message={consolidado.query.error?.message ?? 'No se pudo cargar el consolidado.'}
           onRetry={() => {
@@ -80,10 +75,7 @@ export default function ConsolidadoPage() {
   if (!data) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div>
-          <h1 className="text-3xl font-bold">Consolidado</h1>
-          <p className="text-slate-600">Vista consolidada por negocio con saldos al corte</p>
-        </div>
+        <PageHeader title="Consolidado" />
         <EmptyState
           icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
           title="Sin información"
@@ -99,12 +91,7 @@ export default function ConsolidadoPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Consolidado</h1>
-          <p className="text-slate-600">Vista consolidada por negocio con saldos al corte</p>
-        </div>
-      </div>
+      <PageHeader title="Consolidado" />
 
       <ConsolidadoFilters
         filters={consolidado.filters}

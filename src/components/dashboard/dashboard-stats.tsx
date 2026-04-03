@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/format';
 import { useNegocios } from '@/hooks/use-negocios';
 
 export type DashboardStatsProps = {
@@ -10,10 +11,6 @@ export type DashboardStatsProps = {
   selectedNegocio: number | null;
   rol: string;
 };
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(value);
-}
 
 export function DashboardStats({ negocios, selectedNegocio, rol }: DashboardStatsProps) {
   const isDueño = rol === 'Dueño';

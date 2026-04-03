@@ -6,6 +6,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import type { Categoria } from '@/types/categoria.types';
 
 function toUiTipo(tipo: Categoria['tipo']): 'ingreso' | 'egreso' {
@@ -22,10 +23,6 @@ function parseMoney(raw: string | null): number | null {
   const num = Number(raw);
   if (!Number.isFinite(num) || Number.isNaN(num)) return null;
   return num;
-}
-
-function formatCurrencyMXN(amount: number): string {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
 }
 
 export type CategoriasTableProps = {
@@ -79,7 +76,7 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
                   {categoria.requiereAprobacion === false ? (
                     <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">Automática</Badge>
                   ) : maxAuto !== null ? (
-                    <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">{`Hasta ${formatCurrencyMXN(maxAuto)} auto`}</Badge>
+                    <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">{`Hasta ${formatCurrency(maxAuto)} auto`}</Badge>
                   ) : (
                     <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">
                       Requerida

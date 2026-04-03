@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
+import { formatCurrency } from '@/lib/format';
 import type { MovimientoListItem } from '@/hooks/use-movimientos';
 
 const schema = z.object({
@@ -24,10 +25,6 @@ export type RechazoDialogProps = {
   onConfirm: (motivoRechazo: string) => Promise<void>;
   isPending: boolean;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -51,7 +48,7 @@ export function RechazoDialog({ open, onOpenChange, movimiento, onConfirm, isPen
     onOpenChange(false);
   };
 
-  const monto = movimiento ? formatCurrencyMXN(parseMoney(movimiento.monto)) : '';
+  const monto = movimiento ? formatCurrency(parseMoney(movimiento.monto)) : '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

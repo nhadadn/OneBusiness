@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useDeleteMovimiento, useMovimientos, useRechazarMovimiento, type MovimientosFilters } from '@/hooks/use-movimientos';
 import type { MovimientoListItem } from '@/hooks/use-movimientos';
@@ -32,10 +33,6 @@ export type MovimientosTableProps = {
   onAprobar?: (id: number) => void;
   onRechazar?: (id: number) => void;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function formatDateDMY(value: string) {
   const [y, m, d] = value.split('-');
@@ -373,15 +370,15 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Total ingresos</div>
-          <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrencyMXN(resumen.ingresos)}</div>
+          <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrency(resumen.ingresos)}</div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Total egresos</div>
-          <div className="mt-1 font-mono text-base text-red-700">{formatCurrencyMXN(resumen.egresos)}</div>
+          <div className="mt-1 font-mono text-base text-red-700">{formatCurrency(resumen.egresos)}</div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Balance</div>
-          <div className="mt-1 font-mono text-base">{formatCurrencyMXN(resumen.balance)}</div>
+          <div className="mt-1 font-mono text-base">{formatCurrency(resumen.balance)}</div>
         </div>
       </div>
 
@@ -401,7 +398,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
           </TableHeader>
           <TableBody>
             {items.map((mov) => {
-              const monto = formatCurrencyMXN(parseMoney(mov.monto));
+              const monto = formatCurrency(parseMoney(mov.monto));
               const canApproveReject = canManage && mov.estado === 'PENDIENTE';
               const isApproving = moderation.action?.type === 'aprobar' && moderation.action.id === mov.id;
               const isRejecting = moderation.action?.type === 'rechazar' && moderation.action.id === mov.id;

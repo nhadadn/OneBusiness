@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useCancelarMovimiento, useMarcarPagado, useMovimientos, type MovimientoListItem } from '@/hooks/use-movimientos';
 import type { TipoMovimiento } from '@/types/movimiento.types';
 
@@ -24,10 +25,6 @@ export type AprobacionTableProps = {
   onAprobar?: (mov: MovimientoListItem) => void;
   onRechazar?: (mov: MovimientoListItem) => void;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -164,7 +161,7 @@ export function AprobacionTable({
           </TableHeader>
           <TableBody>
             {items.map((mov) => {
-              const monto = formatCurrencyMXN(parseMoney(mov.monto));
+              const monto = formatCurrency(parseMoney(mov.monto));
               const negocioLabel = negocioOptions.find((n) => n.id === mov.negocioId)?.label ?? `Negocio ${mov.negocioId}`;
               const isApproving = false;
               const isRejecting = false;

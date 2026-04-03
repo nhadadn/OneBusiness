@@ -11,12 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useMovimientoDetalle, useRechazarMovimiento, useReenviarMovimiento } from '@/hooks/use-movimientos';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);

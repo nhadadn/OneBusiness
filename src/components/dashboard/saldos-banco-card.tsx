@@ -6,6 +6,7 @@ import { Landmark } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/format';
 import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useAuth } from '@/hooks/use-auth';
 import type { TipoCuenta } from '@/types/cuenta_banco.types';
@@ -22,14 +23,6 @@ interface CuentaConSaldo {
   saldoCalculado: number;
   saldoReal: number | null;
   diferencia: number | null;
-}
-
-function formatCurrencyMXN(value: number | string): string {
-  const num = typeof value === 'string' ? parseFloat(value) : value;
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-  }).format(num);
 }
 
 function calcularSaldoCuenta(cuenta: { saldoReal: string | null; saldoInicial: string }): number {
@@ -113,14 +106,14 @@ export function SaldosBancoCard({ negocioId }: SaldosBancoCardProps) {
                       )}
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrencyMXN(cuenta.saldoCalculado)}
+                      {formatCurrency(cuenta.saldoCalculado)}
                     </TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="border-t-2 font-bold">
                   <TableCell colSpan={3}>Total Consolidado</TableCell>
                   <TableCell className="text-right">
-                    {formatCurrencyMXN(totalConsolidado)}
+                    {formatCurrency(totalConsolidado)}
                   </TableCell>
                 </TableRow>
               </TableBody>

@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -22,10 +23,6 @@ function parseMoney(raw: string | null): number | null {
   const num = Number(raw);
   if (!Number.isFinite(num) || Number.isNaN(num)) return null;
   return num;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
 }
 
 export type NegociosTableProps = {
@@ -81,7 +78,7 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                     )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell font-mono">
-                    {umbralAlerta === null ? '—' : formatCurrencyMXN(umbralAlerta)}
+                    {umbralAlerta === null ? '—' : formatCurrency(umbralAlerta)}
                   </TableCell>
                   {canManage ? (
                     <TableCell className="px-2 sm:px-4">

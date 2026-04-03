@@ -10,14 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ArqueoNegocio } from '@/types/cuenta_banco.types';
 import type { ConsolidadoNegocioItem } from '@/types/negocio.types';
-
-function formatCurrencyMXN(value: number | null): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -93,9 +89,15 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
                           <div className="font-medium">{n.nombre}</div>
                           <div className="text-xs text-muted-foreground">ID: {n.negocioId}</div>
                         </TableCell>
-                        <TableCell className="text-right font-mono text-emerald-700">{formatCurrencyMXN(n.totalIngresos)}</TableCell>
-                        <TableCell className="text-right font-mono text-red-700">{formatCurrencyMXN(n.totalEgresos)}</TableCell>
-                        <TableCell className="text-right font-mono">{formatCurrencyMXN(n.saldoNeto)}</TableCell>
+                        <TableCell className="text-right font-mono text-emerald-700">
+                          {typeof n.totalIngresos === 'number' && Number.isFinite(n.totalIngresos) ? formatCurrency(n.totalIngresos) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-red-700">
+                          {typeof n.totalEgresos === 'number' && Number.isFinite(n.totalEgresos) ? formatCurrency(n.totalEgresos) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {typeof n.saldoNeto === 'number' && Number.isFinite(n.saldoNeto) ? formatCurrency(n.saldoNeto) : '—'}
+                        </TableCell>
                         <TableCell className="text-right">
                           {n.movimientosPendientes > 0 ? (
                             <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">

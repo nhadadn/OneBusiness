@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/hooks/use-auth';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useMovimientos } from '@/hooks/use-movimientos';
@@ -27,10 +28,6 @@ function getDefaultRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   return { fechaDesde: toISODate(start), fechaHasta: toISODate(now) };
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function parseMoney(raw: string) {
@@ -276,7 +273,7 @@ export default function MovimientosPage() {
                 <div className="rounded-lg border border-border bg-background">
                   <div className="divide-y divide-border">
                     {pendientesItems.map((mov: MovimientoListItem) => {
-                      const amount = formatCurrencyMXN(parseMoney(mov.monto));
+                      const amount = formatCurrency(parseMoney(mov.monto));
                       const isApproving = moderation.action?.type === 'aprobar' && moderation.action.id === mov.id;
                       const isRejecting = moderation.action?.type === 'rechazar' && moderation.action.id === mov.id;
                       const disabled = isApproving || isRejecting;

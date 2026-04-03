@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SaldosBancoCard } from '@/components/dashboard/saldos-banco-card';
 
@@ -100,10 +101,6 @@ function getPeriodRange(period: PeriodKey): { fechaDesde: string; fechaHasta: st
     return { fechaDesde: toISODate(start), fechaHasta: toISODate(now) };
   }
   return { fechaDesde: toISODate(new Date(now.getFullYear(), 0, 1)), fechaHasta: toISODate(now) };
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
 }
 
 function semaforoRank(value: Semaforo) {
@@ -387,7 +384,7 @@ export default function DashboardPage() {
             {items.map((n) => {
               const pending = n.cantidadPendientes ?? 0;
               const pendingLabel = pending === 1 ? 'pendiente' : 'pendientes';
-              const balanceLabel = formatCurrencyMXN(n.balance);
+              const balanceLabel = formatCurrency(n.balance);
 
               return (
                 <Card
@@ -452,17 +449,17 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <MetricCard
               title="Total ingresos"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.totalIngresos ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.totalIngresos ?? 0)}
               valueClassName="text-emerald-600"
             />
             <MetricCard
               title="Total egresos"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.totalEgresos ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.totalEgresos ?? 0)}
               valueClassName="text-destructive"
             />
             <MetricCard
               title="Balance neto"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.balance ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.balance ?? 0)}
               valueClassName={(globalData?.totalesGlobales.balance ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600'}
             />
           </div>
@@ -630,7 +627,7 @@ export default function DashboardPage() {
           <MetricCard title="Pendientes" value={`${pendientes}`} />
           <MetricCard
             title="Balance (período)"
-            value={formatCurrencyMXN(balance)}
+            value={formatCurrency(balance)}
             valueClassName={balance < 0 ? 'text-destructive' : 'text-emerald-600'}
           />
           <MetricCard title="Movimientos recientes" value={`${operativoMovs.length}`} />
@@ -662,7 +659,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {operativoMovs.map((m) => {
-                  const monto = formatCurrencyMXN(Number(m.monto) || 0);
+                  const monto = formatCurrency(Number(m.monto) || 0);
                   return (
                     <div key={m.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
                       <div className="min-w-0">

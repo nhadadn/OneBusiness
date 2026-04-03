@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
 import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useApiClient } from '@/hooks/use-api-client';
 
@@ -43,10 +44,6 @@ export type TraspasoFormProps = {
 
 function todayISO() {
   return new Date().toISOString().split('T')[0]!;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
@@ -268,7 +265,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
             Se crearán 2 movimientos pendientes de aprobación: EGRESO de{' '}
             <span className="font-semibold text-foreground">{cuentaOrigen?.nombre ?? '—'}</span> e INGRESO en{' '}
             <span className="font-semibold text-foreground">{cuentaDestino?.nombre ?? '—'}</span> por{' '}
-            <span className="font-semibold text-foreground">{montoOk ? formatCurrencyMXN(monto) : '—'}</span>
+            <span className="font-semibold text-foreground">{montoOk ? formatCurrency(monto) : '—'}</span>
           </div>
         </div>
 
