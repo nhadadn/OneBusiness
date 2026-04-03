@@ -14,9 +14,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/format';
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
-import { useApiClient } from '@/hooks/use-api-client';
 import { useMovimientos } from '@/hooks/use-movimientos';
+import { usePendingCount } from '@/hooks/use-pending-count';
 import type { MovimientosFilters as FiltersState, MovimientoListItem } from '@/hooks/use-movimientos';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
@@ -74,67 +75,11 @@ function getRangeFromPreset(preset: PeriodPreset) {
 export default function MovimientosPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const { apiFetch } = useApiClient();
+  const { negocioId, openNewMovimiento } = useDashboardContext();
+  const pendingCountQuery = usePendingCount();
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const canImport = user?.rol === 'Dueño' || user?.rol === 'Socio' || user?.rol === 'Admin';
-
-  const [negocioId, setNegocioId] = useState<number | null>(null);
-  const [pendingCount, setPendingCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    if (typeof negocioId === 'number') return;
-
-    const raw = localStorage.getItem('lastNegocioId');
-    const fromStorage = raw ? Number(raw) : Number.NaN;
-    const desired = Number.isFinite(fromStorage) ? fromStorage : null;
-    const desiredAllowed = typeof desired === 'number' && (user.negocios ?? []).includes(desired);
-    const next = desiredAllowed ? desired : (user.negocios ?? [])[0] ?? null;
-    setNegocioId(typeof next === 'number' ? next : null);
-  }, [negocioId, user]);
-
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const nextId = (event as CustomEvent<{ negocioId: number }>).detail?.negocioId;
-      if (typeof nextId !== 'number') return;
-      setNegocioId(nextId);
-    };
-    window.addEventListener('onebusiness:negocio-changed', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:negocio-changed', handler as EventListener);
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-
-    const fetchCount = async () => {
-      try {
-        const res = await apiFetch('/api/movimientos/pendientes/count', { headers: { 'Cache-Control': 'no-store' } });
-        if (!res.ok) {
-          if (active) setPendingCount(null);
-          return;
-        }
-        const data = (await res.json()) as { success: boolean; count: number };
-        if (!active) return;
-        setPendingCount(typeof data.count === 'number' ? data.count : null);
-      } catch {
-        if (!active) return;
-        setPendingCount(null);
-      }
-    };
-
-    void fetchCount();
-
-    const handler = () => {
-      void fetchCount();
-    };
-
-    window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    return () => {
-      active = false;
-      window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    };
-  }, [apiFetch, user]);
+  const pendingCount = pendingCountQuery.data?.count;
 
   const [pendientesPage, setPendientesPage] = useState(1);
   useEffect(() => {
@@ -151,14 +96,6 @@ export default function MovimientosPage() {
   const moderation = useMovimientoInlineModeration({
     negocioId: typeof negocioId === 'number' ? negocioId : undefined,
   });
-
-  useEffect(() => {
-    const handler = () => {
-      pendientesQuery.refetch();
-    };
-    window.addEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-  }, [pendientesQuery]);
 
   const pendientesItems = useMemo(() => {
     const base = pendientesQuery.data?.items ?? [];
@@ -231,7 +168,7 @@ export default function MovimientosPage() {
             ) : null}
             <Button
               variant="default"
-              onClick={() => window.dispatchEvent(new CustomEvent('onebusiness:new-movimiento-open'))}
+              onClick={openNewMovimiento}
             >
               Nuevo movimiento
             </Button>

@@ -23,13 +23,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
-
-type PendingCountResponse = {
-  success: boolean;
-  count: number;
-};
+import { usePendingCount } from '@/hooks/use-pending-count';
 
 export type NavItem = {
   label: string;
@@ -58,43 +53,12 @@ function getInitials(nombre: string) {
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { apiFetch } = useApiClient();
 
   const [collapsed, setCollapsed] = React.useState(false);
-  const [pendingCount, setPendingCount] = React.useState<number | null>(null);
-  const [refreshTick, setRefreshTick] = React.useState(0);
+  const pendingCountQuery = usePendingCount();
 
   const sections = React.useMemo(() => buildNavSections(user?.rol), [user?.rol]);
-
-  React.useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const res = await apiFetch('/api/movimientos/pendientes/count');
-        if (!res.ok) {
-          if (active) setPendingCount(null);
-          return;
-        }
-        const data = (await res.json()) as PendingCountResponse;
-        if (!active) return;
-        setPendingCount(typeof data.count === 'number' ? data.count : null);
-      } catch {
-        if (!active) return;
-        setPendingCount(null);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [apiFetch, pathname, refreshTick]);
-
-  React.useEffect(() => {
-    const handler = () => setRefreshTick((v) => v + 1);
-    window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-  }, []);
+  const pendingCount = pendingCountQuery.data?.count;
 
   const widthClassName = collapsed ? 'w-16' : 'w-60';
 
@@ -141,7 +105,7 @@ export function Sidebar() {
                     const isActive = pathname === item.href;
                     const Icon = item.icon;
 
-                    const badge = item.showBadge && pendingCount && pendingCount > 0 ? (
+                    const badge = item.showBadge && typeof pendingCount === 'number' && pendingCount > 0 ? (
                       <Badge
                         variant="outline"
                         className={cn(

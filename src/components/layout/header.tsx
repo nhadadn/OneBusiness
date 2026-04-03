@@ -94,9 +94,6 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
     if (negocioId !== nextId) {
       onNegocioChange(nextId);
     }
-
-    localStorage.setItem('lastNegocioId', String(nextId));
-    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
   }, [negocios, negocioId, onNegocioChange]);
 
   const showNewMovimiento = pathname === '/dashboard' || pathname === '/movimientos';
@@ -124,8 +121,6 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
               const nextId = Number(value);
               if (!Number.isFinite(nextId)) return;
               onNegocioChange(nextId);
-              localStorage.setItem('lastNegocioId', String(nextId));
-              window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
             }}
           >
             <SelectTrigger className="bg-background border-border">

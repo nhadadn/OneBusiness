@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export function FacturarCotizacionDialog({
 }) {
   const { apiFetch } = useApiClient();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [numeroFactura, setNumeroFactura] = useState('');
   const [cuentaBancoId, setCuentaBancoId] = useState<string>('');
@@ -164,8 +166,9 @@ export function FacturarCotizacionDialog({
 
       onOpenChange(false);
       toast.success('Factura registrada. Se creó un movimiento de ingreso pendiente.');
-      window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-      window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+      void queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+      void queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+      void queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
       onSuccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar la factura');

@@ -9,13 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { buildNavSections, type NavSection } from '@/components/layout/sidebar';
 import { cn } from '@/lib/utils';
-import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
-
-type PendingCountResponse = {
-  success: boolean;
-  count: number;
-};
+import { usePendingCount } from '@/hooks/use-pending-count';
 
 export type MobileNavProps = {
   open: boolean;
@@ -25,39 +20,9 @@ export type MobileNavProps = {
 export function MobileNav({ open, onOpenChange }: MobileNavProps) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const { apiFetch } = useApiClient();
   const sections: NavSection[] = React.useMemo(() => buildNavSections(user?.rol), [user?.rol]);
-
-  const [pendingCount, setPendingCount] = React.useState<number | null>(null);
-  const [refreshTick, setRefreshTick] = React.useState(0);
-
-  React.useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const res = await apiFetch('/api/movimientos/pendientes/count');
-        if (!res.ok) {
-          if (active) setPendingCount(null);
-          return;
-        }
-        const data = (await res.json()) as PendingCountResponse;
-        if (!active) return;
-        setPendingCount(typeof data.count === 'number' ? data.count : null);
-      } catch {
-        if (!active) return;
-        setPendingCount(null);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [apiFetch, pathname, refreshTick]);
-
-  React.useEffect(() => {
-    const handler = () => setRefreshTick((v) => v + 1);
-    window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-  }, []);
+  const pendingCountQuery = usePendingCount();
+  const pendingCount = pendingCountQuery.data?.count;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -86,7 +51,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                     const Icon = item.icon;
 
                     const badge =
-                      item.showBadge && pendingCount && pendingCount > 0 ? (
+                      item.showBadge && typeof pendingCount === 'number' && pendingCount > 0 ? (
                         <Badge variant="outline" className="ml-auto border-0 bg-primary px-2 py-0 text-[11px] text-primary-foreground">
                           {pendingCount}
                         </Badge>

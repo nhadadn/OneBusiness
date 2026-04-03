@@ -22,6 +22,7 @@ import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SaldosBancoCard } from '@/components/dashboard/saldos-banco-card';
 
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useApiClient } from '@/hooks/use-api-client';
 
@@ -109,32 +110,6 @@ function semaforoRank(value: Semaforo) {
   return 2;
 }
 
-function useSelectedNegocioId() {
-  const [negocioId, setNegocioId] = React.useState<number | null>(null);
-
-  React.useEffect(() => {
-    const raw = localStorage.getItem('lastNegocioId');
-    const parsed = raw ? Number(raw) : Number.NaN;
-    if (Number.isFinite(parsed) && parsed > 0) {
-      setNegocioId(parsed);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    const handler = (event: Event) => {
-      const raw = (event as CustomEvent).detail as { negocioId?: unknown } | undefined;
-      const parsed = typeof raw?.negocioId === 'number' ? raw.negocioId : Number(raw?.negocioId);
-      if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) return;
-      setNegocioId(parsed);
-    };
-
-    window.addEventListener('onebusiness:negocio-changed', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:negocio-changed', handler as EventListener);
-  }, []);
-
-  return negocioId;
-}
-
 type UmbralesValues = {
   umbralAlerta: string;
   umbralCritico: string;
@@ -211,7 +186,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const { apiFetch } = useApiClient();
-  const selectedNegocioId = useSelectedNegocioId();
+  const { negocioId: selectedNegocioId, setNegocioId } = useDashboardContext();
 
   const [period, setPeriod] = React.useState<PeriodKey>('este_mes');
   const [globalData, setGlobalData] = React.useState<DashboardResumenGlobalResponse['data'] | null>(null);
@@ -391,8 +366,7 @@ export default function DashboardPage() {
                   key={n.negocioId}
                   className="cursor-pointer border-border bg-card shadow-none transition-colors hover:bg-accent"
                   onClick={() => {
-                    localStorage.setItem('lastNegocioId', String(n.negocioId));
-                    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: n.negocioId } }));
+                    setNegocioId(n.negocioId);
                     router.push('/movimientos');
                   }}
                 >

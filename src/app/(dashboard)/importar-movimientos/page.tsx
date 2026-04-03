@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Loader2, TriangleAlert, Upload, X, XCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -104,6 +105,7 @@ export default function ImportarMovimientosPage() {
   const router = useRouter();
   const { user, isLoading, accessToken, refreshSession, logout } = useAuth();
   const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
 
   const [phase, setPhase] = React.useState<Phase>('subir');
 
@@ -312,8 +314,9 @@ export default function ImportarMovimientosPage() {
 
       if (res.ok) {
         const data = (await res.json()) as { success: boolean; data: { total: number; creados: number } };
-        window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-        window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+        void queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+        void queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+        void queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
         setResult({ kind: 'success', total: data.data.total, creados: data.data.creados });
         setPhase('resultado');
         return;
@@ -662,7 +665,6 @@ export default function ImportarMovimientosPage() {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
                   router.push('/movimientos');
                 }}
               >

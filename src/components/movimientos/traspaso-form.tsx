@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -48,6 +49,7 @@ function todayISO() {
 
 export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
   const cuentasQuery = useCuentasBanco({ negocioId });
   const cuentas = cuentasQuery.data?.data ?? [];
 
@@ -143,8 +145,9 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
             }
 
             toast.success('Traspaso creado — 2 movimientos pendientes', { duration: 2500 });
-            window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-            window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+            await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+            await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+            await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
             onSuccess();
           } catch (e) {
             toast.error(e instanceof Error ? e.message : 'No se pudo crear el traspaso', { duration: 5000 });

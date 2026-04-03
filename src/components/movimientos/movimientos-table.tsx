@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/format';
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useDeleteMovimiento, useMovimientos, useRechazarMovimiento, type MovimientosFilters } from '@/hooks/use-movimientos';
 import type { MovimientoListItem } from '@/hooks/use-movimientos';
@@ -127,7 +128,6 @@ export function useMovimientoInlineModeration({
         [mov.id]: 'APROBADO',
         ...(typeof mov.traspasoRefId === 'number' ? { [mov.traspasoRefId]: 'APROBADO' } : {}),
       }));
-      window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
       if (typeof mov.traspasoRefId === 'number') {
         toast.success('Traspaso aprobado — 2 movimientos actualizados', { duration: 2500 });
       } else {
@@ -180,7 +180,6 @@ export function useMovimientoInlineModeration({
               [id]: 'RECHAZADO',
               ...(typeof rechazoTarget.traspasoRefId === 'number' ? { [rechazoTarget.traspasoRefId]: 'RECHAZADO' } : {}),
             }));
-            window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
             if (typeof rechazoTarget.traspasoRefId === 'number') {
               toast.success('Traspaso rechazado — 2 movimientos actualizados', { duration: 2500 });
             } else {
@@ -223,7 +222,6 @@ export function useMovimientoInlineModeration({
                 try {
                   await eliminar.mutateAsync({ id, negocioId });
                   setEliminarOpen(false);
-                  window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
                   toast.success('Movimiento eliminado', { duration: 2500 });
                 } catch (e) {
                   setActionError((prev) => ({
@@ -271,6 +269,7 @@ function getVisiblePages(page: number, totalPages: number) {
 export function MovimientosTable({ filters, search, onAprobar, onRechazar }: MovimientosTableProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { openNewMovimiento } = useDashboardContext();
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const negocioId = filters.negocioId;
 
@@ -322,14 +321,6 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   }, [items]);
 
   React.useEffect(() => {
-    const handler = () => {
-      query.refetch();
-    };
-    window.addEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-  }, [query]);
-
-  React.useEffect(() => {
     query.refetch();
   }, [query, search]);
 
@@ -359,7 +350,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
         description="Crea el primer movimiento para empezar a registrar las finanzas de este negocio."
         action={{
           label: 'Nuevo movimiento',
-          onClick: () => window.dispatchEvent(new CustomEvent('onebusiness:new-movimiento-open')),
+          onClick: openNewMovimiento,
         }}
       />
     );
