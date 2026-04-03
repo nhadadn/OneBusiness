@@ -7,7 +7,8 @@ import { Check, CircleCheck, Loader2, Search, Upload, X } from 'lucide-react';
 import { MovimientosTable, useMovimientoInlineModeration } from '@/components/movimientos/movimientos-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { MovimientosLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -212,7 +213,7 @@ export default function MovimientosPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <MovimientosLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
@@ -220,20 +221,26 @@ export default function MovimientosPage() {
 
   return (
     <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Movimientos</h1>
-          <p className="text-slate-600">Dashboard operativo de aprobación e historial</p>
-        </div>
-        {canImport ? (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
-              <Upload className="h-4 w-4" />
-              Importar
+      <PageHeader
+        title="Movimientos"
+        description="Dashboard operativo de aprobación e historial"
+        action={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+            {canImport ? (
+              <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
+                <Upload className="h-4 w-4" aria-hidden="true" />
+                Importar
+              </Button>
+            ) : null}
+            <Button
+              variant="default"
+              onClick={() => window.dispatchEvent(new CustomEvent('onebusiness:new-movimiento-open'))}
+            >
+              Nuevo movimiento
             </Button>
           </div>
-        ) : null}
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <section className="lg:col-span-4">
@@ -252,7 +259,7 @@ export default function MovimientosPage() {
               {typeof negocioId !== 'number' ? (
                 <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
               ) : pendientesQuery.isLoading ? (
-                <MovimientosLoader />
+                <LoadingSkeleton variant="table" rows={5} />
               ) : pendientesQuery.error instanceof Error ? (
                 <ErrorState message={pendientesQuery.error.message} onRetry={() => pendientesQuery.refetch()} />
               ) : pendientesItems.length === 0 ? (

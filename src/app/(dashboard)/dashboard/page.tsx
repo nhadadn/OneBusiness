@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { DashboardGlobalLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -334,7 +335,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <DashboardGlobalLoader />
+        <LoadingSkeleton variant="card" rows={4} />
       </div>
     );
   }
@@ -357,7 +358,7 @@ export default function DashboardPage() {
     if (globalLoading) {
       return (
         <div className="container mx-auto space-y-6 py-6">
-          <DashboardGlobalLoader />
+          <LoadingSkeleton variant="card" rows={4} />
         </div>
       );
     }
@@ -378,12 +379,7 @@ export default function DashboardPage() {
 
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-slate-600">
-            Bienvenido, {user.nombre} ({user.rol})
-          </p>
-        </div>
+        <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
 
         <section className="space-y-3">
           <div className="text-sm font-semibold text-foreground">Semáforo de negocios</div>
@@ -610,7 +606,7 @@ export default function DashboardPage() {
     if (operativoLoading) {
       return (
         <div className="container mx-auto space-y-6 py-6">
-          <DashboardGlobalLoader />
+          <LoadingSkeleton variant="card" rows={4} />
         </div>
       );
     }
@@ -628,12 +624,7 @@ export default function DashboardPage() {
 
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-slate-600">
-            Bienvenido, {user.nombre} ({user.rol})
-          </p>
-        </div>
+        <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <MetricCard title="Pendientes" value={`${pendientes}`} />

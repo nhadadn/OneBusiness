@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Check, ClipboardList, Eye, Loader2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EstadoBadge } from '@/components/movimientos/estado-badge';
 import { RechazoDialog } from '@/components/movimientos/rechazo-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { MovimientosLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -67,6 +66,15 @@ function getTraspasoBadge(traspasoId: number) {
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+function getEstadoBadge(estado: EstadoMovimiento) {
+  if (estado === 'PENDIENTE') return <Badge variant="pendiente">Pendiente</Badge>;
+  if (estado === 'APROBADO') return <Badge variant="aprobado">Aprobado</Badge>;
+  if (estado === 'PAGADO') return <Badge variant="pagado">Pagado</Badge>;
+  if (estado === 'RECHAZADO') return <Badge variant="rechazado">Rechazado</Badge>;
+  if (estado === 'CANCELADO') return <Badge variant="cancelado">Cancelado</Badge>;
+  return <Badge variant="outline">{estado}</Badge>;
 }
 
 function parseMoney(raw: string) {
@@ -339,7 +347,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   }
 
   if (query.isLoading) {
-    return <MovimientosLoader />;
+    return <LoadingSkeleton variant="table" rows={5} />;
   }
 
   if (query.error instanceof Error) {
@@ -413,7 +421,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                   </TableCell>
                   <TableCell className="text-right font-mono">{monto}</TableCell>
                   <TableCell>
-                    <EstadoBadge estado={mov.estado} />
+                    {getEstadoBadge(mov.estado)}
                   </TableCell>
                   <TableCell className="px-2 sm:px-4">
                     <div className="flex items-center gap-2">
