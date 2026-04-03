@@ -100,7 +100,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   }
 
   if (cuentasQuery.isLoading) {
-    return <div className="text-sm text-slate-600">Cargando cuentas...</div>;
+    return <div className="text-sm text-muted-foreground">Cargando cuentas...</div>;
   }
 
   if (cuentasQuery.error instanceof Error) {

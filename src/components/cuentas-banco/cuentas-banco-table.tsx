@@ -35,7 +35,7 @@ function getDisponibilidadBadge(cuenta: CuentaBancoListItem) {
   }
 
   return (
-    <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700">
+    <Badge variant="outline" className="border-border bg-muted text-foreground">
       Exclusiva
     </Badge>
   );

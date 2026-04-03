@@ -189,12 +189,12 @@ export function FacturarCotizacionDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Número de factura</label>
+            <label className="text-sm font-medium text-foreground">Número de factura</label>
             <Input value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} placeholder="F-001" disabled={!canFacturar || isSubmitting} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Cuenta bancaria destino</label>
+            <label className="text-sm font-medium text-foreground">Cuenta bancaria destino</label>
             <Select value={cuentaBancoId} onValueChange={(v) => setCuentaBancoId(v)} disabled={!canFacturar || isSubmitting || loadingOptions}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingOptions ? 'Cargando...' : 'Selecciona una cuenta'} />
@@ -210,7 +210,7 @@ export function FacturarCotizacionDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Categoría (opcional)</label>
+            <label className="text-sm font-medium text-foreground">Categoría (opcional)</label>
             <Select value={categoriaId} onValueChange={(v) => setCategoriaId(v)} disabled={isSubmitting || loadingOptions}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingOptions ? 'Cargando...' : 'Sin categoría'} />

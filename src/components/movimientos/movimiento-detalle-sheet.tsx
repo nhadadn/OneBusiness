@@ -52,8 +52,8 @@ function getNombreUsuario(value: { nombre?: string | null; email?: string | null
 function getLine(label: string, value: React.ReactNode) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <div className="text-sm text-slate-600">{label}</div>
-      <div className="text-right text-sm text-slate-900">{value}</div>
+      <div className="text-sm text-muted-foreground">{label}</div>
+      <div className="text-right text-sm text-foreground">{value}</div>
     </div>
   );
 }
@@ -80,19 +80,19 @@ export function MovimientoDetalleSheet({
           <SheetTitle className="pr-8">{movimiento?.concepto ?? 'Detalle del movimiento'}</SheetTitle>
         </SheetHeader>
 
-        {query.isLoading && <div className="mt-4 text-sm text-slate-600">Cargando...</div>}
+        {query.isLoading && <div className="mt-4 text-sm text-muted-foreground">Cargando...</div>}
         {query.error instanceof Error && <div className="mt-4 text-sm text-red-600">{query.error.message}</div>}
 
         {movimiento && (
           <div className="mt-4 space-y-6">
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{`Negocio ${movimiento.negocioId}`}</Badge>
                 {getTipoBadge(movimiento.tipo)}
                 <EstadoBadge estado={movimiento.estado} />
               </div>
 
-              <div className="mt-4 text-3xl font-bold text-slate-900">{monto}</div>
+              <div className="mt-4 text-3xl font-bold text-foreground">{monto}</div>
 
               <div className="mt-4 space-y-2">
                 {getLine('Fecha', formatDateDMY(movimiento.fecha))}
@@ -102,8 +102,8 @@ export function MovimientoDetalleSheet({
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
-              <div className="text-sm font-semibold text-slate-900">Trazabilidad</div>
+            <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+              <div className="text-sm font-semibold text-foreground">Trazabilidad</div>
               {getLine('Creado por', getNombreUsuario(movimiento.creadoPor))}
               {getLine('Creado', movimiento.createdAt)}
 
@@ -117,7 +117,7 @@ export function MovimientoDetalleSheet({
               {movimiento.motivoRechazo ? <div className="text-sm text-red-600">{movimiento.motivoRechazo}</div> : null}
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
+            <div className="rounded-lg border border-border bg-card p-4 space-y-2">
               {getLine('Versión', movimiento.version)}
               {getLine('Traspaso ref', movimiento.traspasoRefId ?? '—')}
             </div>

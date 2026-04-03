@@ -31,7 +31,7 @@ function getStatusVariant(estadoArqueo: EstadoArqueo) {
     case 'FALTANTE':
       return { label: 'Faltante', className: 'bg-red-50 text-red-700 hover:bg-red-50' };
     case 'SIN_SALDO_REAL':
-      return { label: 'Sin saldo real', className: 'bg-slate-50 text-slate-700 hover:bg-slate-50' };
+      return { label: 'Sin saldo real', className: 'bg-muted text-foreground hover:bg-muted' };
   }
 }
 
@@ -122,7 +122,7 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       {c.movimientosPendientes > 0 ? (
-                        <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">
+                        <Badge variant="outline" className="bg-muted text-foreground hover:bg-muted">
                           {c.movimientosPendientes}
                         </Badge>
                       ) : (

@@ -211,7 +211,7 @@ export default function CategoriasPage() {
               onCancelar={() => setModalAbierto(false)}
             />
           ) : (
-            <div className="text-sm text-slate-600">Selecciona un negocio para continuar.</div>
+            <div className="text-sm text-muted-foreground">Selecciona un negocio para continuar.</div>
           )}
         </DialogContent>
       </Dialog>

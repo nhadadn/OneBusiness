@@ -36,14 +36,14 @@ export type CategoriasTableProps = {
 export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEditar, rol }: CategoriasTableProps) {
   if (categorias.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-600">
+      <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
         No hay categorías registradas.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

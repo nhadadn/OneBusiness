@@ -442,10 +442,10 @@ export default function CotizacionesPage() {
                           <DropdownMenu.Content
                             align="end"
                             sideOffset={6}
-                            className="z-50 min-w-[200px] rounded-md border border-slate-200 bg-white p-1 shadow-md"
+                            className="z-50 min-w-[200px] rounded-md border border-border bg-popover p-1 shadow-md"
                           >
                             <DropdownMenu.Item
-                              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                               onSelect={() => router.push(`/cotizaciones/${row.id}`)}
                             >
                               <Eye className="h-4 w-4" />
@@ -454,7 +454,7 @@ export default function CotizacionesPage() {
 
                             {(row.estado === 'BORRADOR' || row.estado === 'ENVIADA') && canEdit ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => router.push(`/cotizaciones/${row.id}/editar`)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -464,7 +464,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'FACTURADA' && row.movimientoId ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => router.push(`/movimientos/${row.movimientoId}`)}
                               >
                                 <Eye className="h-4 w-4" />
@@ -476,7 +476,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'BORRADOR' ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('enviar');
@@ -489,7 +489,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'ENVIADA' && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('aprobar');
@@ -502,7 +502,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'APROBADA' && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('facturar');
@@ -515,7 +515,7 @@ export default function CotizacionesPage() {
 
                             {(row.estado === 'ENVIADA' || row.estado === 'APROBADA') && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('cancelar');

@@ -29,7 +29,7 @@ export function ConsolidadoFilters({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Estado</div>
+          <div className="text-sm font-medium text-foreground">Estado</div>
           <Select value={filters.estado} onValueChange={(val) => setEstado(val as ConsolidadoFilters['estado'])} disabled={disabled}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar estado" />
@@ -43,7 +43,7 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Tipo</div>
+          <div className="text-sm font-medium text-foreground">Tipo</div>
           <Select
             value={filters.tipo ?? 'all'}
             onValueChange={(val) => setTipo(val === 'all' ? undefined : (val as ConsolidadoFilters['tipo']))}
@@ -63,10 +63,10 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Fecha desde</div>
+          <div className="text-sm font-medium text-foreground">Fecha desde</div>
           <input
             type="date"
-            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             value={filters.fechaDesde}
             onChange={(e) => setFechaDesde(e.target.value)}
             disabled={disabled}
@@ -74,10 +74,10 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Fecha hasta</div>
+          <div className="text-sm font-medium text-foreground">Fecha hasta</div>
           <input
             type="date"
-            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             value={filters.fechaHasta}
             onChange={(e) => setFechaHasta(e.target.value)}
             disabled={disabled}

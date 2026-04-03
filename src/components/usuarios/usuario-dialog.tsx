@@ -32,7 +32,7 @@ export function UsuarioDialog({ open, onOpenChange, usuario, negocioId, negocios
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {usuario && isLoading && <div className="text-sm text-slate-600">Cargando usuario...</div>}
+        {usuario && isLoading && <div className="text-sm text-muted-foreground">Cargando usuario...</div>}
         {usuario && error instanceof Error && <div className="text-sm text-red-600">{error.message}</div>}
 
         {!usuario || detail ? (
@@ -47,4 +47,3 @@ export function UsuarioDialog({ open, onOpenChange, usuario, negocioId, negocios
     </Dialog>
   );
 }
-

@@ -142,10 +142,10 @@ export function AprobacionTable({
           </SelectContent>
         </Select>
 
-        <div className="text-sm text-slate-600">{`Página ${page} de ${totalPages}`}</div>
+        <div className="text-sm text-muted-foreground">{`Página ${page} de ${totalPages}`}</div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

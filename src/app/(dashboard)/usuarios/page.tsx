@@ -52,7 +52,7 @@ export default function UsuariosPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Usuarios</h1>
-          <p className="text-slate-600">Gestiona los usuarios del sistema</p>
+          <p className="text-muted-foreground">Gestiona los usuarios del sistema</p>
         </div>
         {canCreate && (
           <Button onClick={handleCreate}>

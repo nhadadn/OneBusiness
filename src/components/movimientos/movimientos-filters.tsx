@@ -107,10 +107,10 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
       </div>
 
       {expanded && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-border bg-card p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">Negocio</div>
+              <div className="text-sm font-medium text-foreground">Negocio</div>
               <Select value={filters.negocioId ? String(filters.negocioId) : ''} onValueChange={(val) => handleNegocioChange(Number(val))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar negocio" />
@@ -126,7 +126,7 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">Tipo</div>
+              <div className="text-sm font-medium text-foreground">Tipo</div>
               <Select value={filters.tipo ?? 'all'} onValueChange={(val) => handleTipoChange(val === 'all' ? undefined : (val as TipoMovimiento))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
@@ -142,20 +142,20 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">Fecha desde</div>
+              <div className="text-sm font-medium text-foreground">Fecha desde</div>
               <input
                 type="date"
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
                 value={filters.fechaDesde ?? ''}
                 onChange={(e) => handleFechaDesdeChange(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium text-slate-700">Fecha hasta</div>
+              <div className="text-sm font-medium text-foreground">Fecha hasta</div>
               <input
                 type="date"
-                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
                 value={filters.fechaHasta ?? ''}
                 onChange={(e) => handleFechaHastaChange(e.target.value)}
               />

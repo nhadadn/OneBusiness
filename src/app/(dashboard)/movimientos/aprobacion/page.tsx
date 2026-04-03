@@ -122,7 +122,7 @@ export default function AprobacionPage() {
             <h1 className="text-3xl font-bold">Panel de aprobación</h1>
             <Badge variant="outline">{totalPendientes}</Badge>
           </div>
-          <p className="text-slate-600">Aprueba o rechaza movimientos pendientes</p>
+          <p className="text-muted-foreground">Aprueba o rechaza movimientos pendientes</p>
         </div>
       </div>
 

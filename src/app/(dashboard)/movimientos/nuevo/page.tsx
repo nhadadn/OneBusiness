@@ -21,7 +21,7 @@ export default function NuevoMovimientoPage() {
         </div>
       </div>
 
-      <div className="max-w-xl rounded-lg border border-slate-200 bg-white p-6">
+      <div className="max-w-xl rounded-lg border border-border bg-card p-6">
         <MovimientoForm onSuccess={() => router.push('/movimientos')} />
       </div>
     </div>

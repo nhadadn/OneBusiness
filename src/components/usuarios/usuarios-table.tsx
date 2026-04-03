@@ -72,7 +72,7 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>

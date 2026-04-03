@@ -46,12 +46,12 @@ export function DashboardStats({ negocios, selectedNegocio, rol }: DashboardStat
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <Card key={card.title} className="border-slate-200">
+        <Card key={card.title} className="border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">{card.title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{card.title}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold text-slate-900">{card.value}</div>
+            <div className="text-2xl font-semibold text-foreground">{card.value}</div>
           </CardContent>
         </Card>
       ))}

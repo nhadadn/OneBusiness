@@ -100,7 +100,7 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
                         </TableCell>
                         <TableCell className="text-right">
                           {n.movimientosPendientes > 0 ? (
-                            <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">
+                            <Badge variant="outline" className="bg-muted text-foreground hover:bg-muted">
                               {n.movimientosPendientes}
                             </Badge>
                           ) : (

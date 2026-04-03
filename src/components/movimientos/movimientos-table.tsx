@@ -57,7 +57,7 @@ function getTraspasoBadge(traspasoId: number) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Badge className="border-slate-200 bg-white text-slate-700">Traspaso</Badge>
+            <Badge className="border-border bg-card text-foreground">Traspaso</Badge>
           </span>
         </TooltipTrigger>
         <TooltipContent>Traspaso vinculado con movimiento #{traspasoId}</TooltipContent>
@@ -399,8 +399,8 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                 <TableRow key={mov.id}>
                   <TableCell className="whitespace-nowrap">{formatDateDMY(mov.fecha)}</TableCell>
                   <TableCell className="font-medium">{mov.concepto}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-slate-700">{mov.tercero ?? '—'}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-slate-700">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-foreground">{mov.tercero ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-foreground">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap items-center gap-2">
                       {getTipoBadge(mov.tipo)}
@@ -463,7 +463,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           {total > 0 ? `Mostrando ${(page - 1) * limit + 1}-${Math.min(page * limit, total)} de ${total} movimientos` : 'Mostrando 0 movimientos'}
         </div>
 
@@ -481,7 +481,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
           </Button>
         </div>
 
-        <div className="text-sm text-slate-600">{`Página ${page} de ${totalPages}`}</div>
+        <div className="text-sm text-muted-foreground">{`Página ${page} de ${totalPages}`}</div>
       </div>
 
       {moderation.dialogs}

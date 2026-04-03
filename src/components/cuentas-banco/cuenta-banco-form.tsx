@@ -255,7 +255,7 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
               <FormItem>
                 <FormLabel>Cuenta global</FormLabel>
                 <FormControl>
-                  <div className="flex items-start gap-3 rounded-md border border-slate-200 p-3">
+                  <div className="flex items-start gap-3 rounded-md border border-border p-3">
                     <Checkbox
                       checked={Boolean(field.value)}
                       onCheckedChange={(checked) => {
@@ -268,8 +268,8 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
                       disabled={isSubmitting}
                     />
                     <div className="space-y-1">
-                      <div className="text-sm font-medium text-slate-900">Disponible para todos los negocios</div>
-                      <div className="text-xs text-slate-600">Esta cuenta estará disponible para todos los negocios del holding.</div>
+                      <div className="text-sm font-medium text-foreground">Disponible para todos los negocios</div>
+                      <div className="text-xs text-muted-foreground">Esta cuenta estará disponible para todos los negocios del holding.</div>
                     </div>
                   </div>
                 </FormControl>
@@ -287,9 +287,9 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
               <FormItem>
                 <FormLabel>Negocios</FormLabel>
                 <FormControl>
-                  <div className="space-y-2 rounded-md border border-slate-200 p-3">
+                  <div className="space-y-2 rounded-md border border-border p-3">
                     {negocios.length === 0 ? (
-                      <div className="text-sm text-slate-600">No hay negocios disponibles.</div>
+                      <div className="text-sm text-muted-foreground">No hay negocios disponibles.</div>
                     ) : (
                       negocios.map((n) => {
                         const checked = Array.isArray(field.value) ? field.value.includes(n.id) : false;
@@ -305,7 +305,7 @@ export function CuentaBancoForm({ negocioId, cuenta, onSuccess }: CuentaBancoFor
                               }}
                               disabled={isSubmitting}
                             />
-                            <span className="text-sm text-slate-900">{n.nombre}</span>
+                            <span className="text-sm text-foreground">{n.nombre}</span>
                           </label>
                         );
                       })

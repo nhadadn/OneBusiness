@@ -220,7 +220,7 @@ export default function MovimientosPage() {
                             <div className="flex items-center justify-between gap-3">
                               <div className="text-xs text-muted-foreground">{formatDateDMY(mov.fecha)}</div>
                               <div
-                                className={`font-mono text-sm ${mov.tipo === 'INGRESO' ? 'text-emerald-700' : mov.tipo === 'EGRESO' ? 'text-red-700' : 'text-slate-700'}`}
+                                className={`font-mono text-sm ${mov.tipo === 'INGRESO' ? 'text-emerald-700' : mov.tipo === 'EGRESO' ? 'text-red-700' : 'text-foreground'}`}
                               >
                                 {amount}
                               </div>
@@ -267,7 +267,7 @@ export default function MovimientosPage() {
                   <Button type="button" variant="outline" size="sm" onClick={() => setPendientesPage((p) => Math.max(1, p - 1))} disabled={!pendientesCanPrev}>
                     Anterior
                   </Button>
-                  <div className="text-sm text-slate-600">{`Página ${pendientesPage} de ${pendientesTotalPages}`}</div>
+                  <div className="text-sm text-muted-foreground">{`Página ${pendientesPage} de ${pendientesTotalPages}`}</div>
                   <Button type="button" variant="outline" size="sm" onClick={() => setPendientesPage((p) => p + 1)} disabled={!pendientesCanNext}>
                     Siguiente
                   </Button>
