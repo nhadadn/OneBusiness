@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { ArrowLeftRight, Plus } from 'lucide-react';
+import { ArrowLeftRight, Menu, Plus } from 'lucide-react';
+import { MobileNav } from '@/components/layout/mobile-nav';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +58,7 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
   const { user } = useAuth();
 
   const [negocios, setNegocios] = React.useState<NegocioListItem[]>([]);
+  const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -101,7 +103,15 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
   const canWrite = user?.rol !== 'Externo';
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-3 sm:px-6">
+      <button
+        type="button"
+        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground md:hidden"
+        aria-label="Abrir menú"
+        onClick={() => setIsMobileNavOpen(true)}
+      >
+        <Menu className="h-5 w-5" aria-hidden="true" />
+      </button>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{getPageTitle(pathname)}</div>
       </div>
@@ -150,6 +160,7 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
           </Button>
         </div>
       ) : null}
+      <MobileNav open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen} />
     </header>
   );
 }

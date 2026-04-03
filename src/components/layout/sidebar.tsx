@@ -31,7 +31,7 @@ type PendingCountResponse = {
   count: number;
 };
 
-type NavItem = {
+export type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -39,7 +39,7 @@ type NavItem = {
   showBadge?: boolean;
 };
 
-type NavSection = {
+export type NavSection = {
   title?: string;
   items: NavItem[];
 };
@@ -64,9 +64,7 @@ export function Sidebar() {
   const [pendingCount, setPendingCount] = React.useState<number | null>(null);
   const [refreshTick, setRefreshTick] = React.useState(0);
 
-  const canSeeUsuarios = user?.rol === 'Dueño' || user?.rol === 'Admin';
-  const canSeeArqueo = user?.rol === 'Dueño' || user?.rol === 'Admin';
-  const canSeeConsolidado = user?.rol === 'Dueño';
+  const sections = React.useMemo(() => buildNavSections(user?.rol), [user?.rol]);
 
   React.useEffect(() => {
     let active = true;
@@ -97,34 +95,6 @@ export function Sidebar() {
     window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
     return () => window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
   }, []);
-
-  const sections: NavSection[] = [
-    {
-      items: [
-        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { label: 'Negocios', href: '/negocios', icon: Building2 },
-        { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
-        { label: 'Reportes', href: '/reportes', icon: FileText },
-      ],
-    },
-    {
-      title: 'Operaciones',
-      items: [
-        { label: 'Movimientos', href: '/movimientos', icon: Banknote },
-        { label: 'Cotizaciones', href: '/cotizaciones', icon: ClipboardList },
-        { label: 'Por aprobar', href: '/movimientos/aprobacion', icon: Timer, showBadge: true },
-      ],
-    },
-    {
-      title: 'Configuración',
-      items: [
-        { label: 'Cuentas bancarias', href: '/configuracion/cuentas-banco', icon: Banknote },
-        { label: 'Arqueo', href: '/configuracion/arqueo', icon: Landmark, show: canSeeArqueo },
-        { label: 'Categorías', href: '/configuracion/categorias', icon: Tags },
-        { label: 'Usuarios', href: '/usuarios', icon: Users, show: canSeeUsuarios },
-      ],
-    },
-  ];
 
   const widthClassName = collapsed ? 'w-16' : 'w-60';
 
@@ -260,5 +230,39 @@ export function Sidebar() {
       </div>
     </aside>
   );
+}
+
+export function buildNavSections(userRole?: string): NavSection[] {
+  const canSeeUsuarios = userRole === 'Dueño' || userRole === 'Admin';
+  const canSeeArqueo = userRole === 'Dueño' || userRole === 'Admin';
+  const canSeeConsolidado = userRole === 'Dueño';
+
+  return [
+    {
+      items: [
+        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { label: 'Negocios', href: '/negocios', icon: Building2 },
+        { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
+        { label: 'Reportes', href: '/reportes', icon: FileText },
+      ],
+    },
+    {
+      title: 'Operaciones',
+      items: [
+        { label: 'Movimientos', href: '/movimientos', icon: Banknote },
+        { label: 'Cotizaciones', href: '/cotizaciones', icon: ClipboardList },
+        { label: 'Por aprobar', href: '/movimientos/aprobacion', icon: Timer, showBadge: true },
+      ],
+    },
+    {
+      title: 'Configuración',
+      items: [
+        { label: 'Cuentas bancarias', href: '/configuracion/cuentas-banco', icon: Banknote },
+        { label: 'Arqueo', href: '/configuracion/arqueo', icon: Landmark, show: canSeeArqueo },
+        { label: 'Categorías', href: '/configuracion/categorias', icon: Tags },
+        { label: 'Usuarios', href: '/usuarios', icon: Users, show: canSeeUsuarios },
+      ],
+    },
+  ];
 }
 
