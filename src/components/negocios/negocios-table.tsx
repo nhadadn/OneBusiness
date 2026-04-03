@@ -43,7 +43,7 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
   if (negocios.length === 0) {
     return (
       <EmptyState
-        icon={Store}
+        icon={<Store className="h-12 w-12 text-muted-foreground" />}
         title="No hay negocios registrados"
         description="Crea el primer negocio para comenzar."
         action={canManage && onCreate ? { label: 'Nuevo negocio', onClick: onCreate } : undefined}

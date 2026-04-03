@@ -257,13 +257,21 @@ export default function MovimientosPage() {
 
             <div className="mt-4 space-y-3">
               {typeof negocioId !== 'number' ? (
-                <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
+                <EmptyState
+                  icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+                  title="Sin negocio seleccionado"
+                  description="Selecciona un negocio para ver pendientes."
+                />
               ) : pendientesQuery.isLoading ? (
                 <LoadingSkeleton variant="table" rows={5} />
               ) : pendientesQuery.error instanceof Error ? (
                 <ErrorState message={pendientesQuery.error.message} onRetry={() => pendientesQuery.refetch()} />
               ) : pendientesItems.length === 0 ? (
-                <EmptyState icon={CircleCheck} title="Todo al día" description="Todo al día — no hay movimientos por aprobar" />
+                <EmptyState
+                  icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+                  title="Todo al día"
+                  description="Todo al día — no hay movimientos por aprobar"
+                />
               ) : (
                 <div className="rounded-lg border border-border bg-background">
                   <div className="divide-y divide-border">

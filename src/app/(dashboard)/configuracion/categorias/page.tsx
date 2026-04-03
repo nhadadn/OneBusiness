@@ -164,14 +164,18 @@ export default function CategoriasPage() {
       </div>
 
       {typeof negocioId !== 'number' ? (
-        <EmptyState icon={Tags} title="Sin negocio seleccionado" description="Selecciona un negocio para ver sus categorías." />
+        <EmptyState
+          icon={<Tags className="h-12 w-12 text-muted-foreground" />}
+          title="Sin negocio seleccionado"
+          description="Selecciona un negocio para ver sus categorías."
+        />
       ) : categoriasQuery.isLoading ? (
         <ConfigListLoader />
       ) : categoriasQuery.error instanceof Error ? (
         <ErrorState message={categoriasQuery.error.message} onRetry={() => categoriasQuery.refetch()} />
       ) : categorias.length === 0 ? (
         <EmptyState
-          icon={Tags}
+          icon={<Tags className="h-12 w-12 text-muted-foreground" />}
           title="Sin categorías"
           description="Las categorías ayudan a organizar los movimientos."
           action={canManage ? { label: 'Nueva categoría', onClick: handleNueva } : undefined}

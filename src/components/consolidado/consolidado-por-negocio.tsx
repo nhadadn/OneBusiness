@@ -52,7 +52,7 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
       <CardContent>
         {negocios.length === 0 ? (
           <EmptyState
-            icon={Landmark}
+            icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
             title="Sin negocios para mostrar"
             description="No hay negocios activos o no hay información para el periodo seleccionado."
           />
@@ -117,7 +117,7 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
                                   <ArqueoTable cuentas={arqueo.cuentas} />
                                 ) : (
                                   <EmptyState
-                                    icon={Landmark}
+                                    icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
                                     title="Sin cuentas bancarias"
                                     description="Este negocio no tiene cuentas activas para calcular arqueo."
                                   />
@@ -125,7 +125,7 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
                               </div>
                             ) : (
                               <EmptyState
-                                icon={Landmark}
+                                icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
                                 title="Sin arqueo disponible"
                                 description="No se pudo calcular arqueo para este negocio."
                               />

@@ -339,7 +339,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   if (typeof negocioId !== 'number') {
     return (
       <EmptyState
-        icon={ClipboardList}
+        icon={<ClipboardList className="h-12 w-12 text-muted-foreground" />}
         title="Sin negocio seleccionado"
         description="Selecciona un negocio para ver movimientos."
       />
@@ -357,7 +357,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   if (items.length === 0) {
     return (
       <EmptyState
-        icon={ClipboardList}
+        icon={<ClipboardList className="h-12 w-12 text-muted-foreground" />}
         title="Sin movimientos"
         description="Crea el primer movimiento para empezar a registrar las finanzas de este negocio."
         action={{

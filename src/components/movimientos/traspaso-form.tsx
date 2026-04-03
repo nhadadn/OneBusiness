@@ -93,7 +93,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   if (typeof negocioId !== 'number') {
     return (
       <EmptyState
-        icon={Building2}
+        icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
         title="Selecciona un negocio"
         description="Selecciona un negocio en el header para crear un traspaso."
       />
@@ -111,7 +111,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   if (cuentas.length < 2) {
     return (
       <EmptyState
-        icon={Building2}
+        icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
         title="Se requieren al menos 2 cuentas"
         description="Crea al menos dos cuentas bancarias para poder realizar un traspaso."
       />

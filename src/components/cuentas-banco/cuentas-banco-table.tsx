@@ -73,7 +73,13 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
   );
 
   if (typeof negocioId !== 'number') {
-    return <EmptyState icon={CreditCard} title="Sin negocio seleccionado" description="Selecciona un negocio para ver sus cuentas." />;
+    return (
+      <EmptyState
+        icon={<CreditCard className="h-12 w-12 text-muted-foreground" />}
+        title="Sin negocio seleccionado"
+        description="Selecciona un negocio para ver sus cuentas."
+      />
+    );
   }
 
   if (query.isLoading) {
@@ -87,7 +93,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
   if (cuentas.length === 0) {
     return (
       <EmptyState
-        icon={CreditCard}
+        icon={<CreditCard className="h-12 w-12 text-muted-foreground" />}
         title="Sin cuentas bancarias"
         description="Agrega la primera cuenta bancaria para este negocio."
         action={canManage && onCreate ? { label: 'Nueva cuenta', onClick: onCreate } : undefined}

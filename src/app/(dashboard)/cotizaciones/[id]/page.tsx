@@ -332,7 +332,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
     return (
       <div className="container mx-auto space-y-6 py-6">
         <EmptyState
-          icon={Send}
+          icon={<Send className="h-12 w-12 text-muted-foreground" />}
           title="Cotización no encontrada"
           description="La cotización no existe o fue eliminada."
           action={{ label: 'Volver a cotizaciones', onClick: () => router.push('/cotizaciones') }}

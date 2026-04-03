@@ -392,7 +392,7 @@ export default function CotizacionesPage() {
         <ErrorState message={error} onRetry={() => fetchCotizaciones()} />
       ) : items.length === 0 ? (
         <EmptyState
-          icon={Send}
+          icon={<Send className="h-12 w-12 text-muted-foreground" />}
           title="No hay cotizaciones"
           description="No hay cotizaciones con los filtros actuales."
           action={{ label: 'Crear primera cotización', onClick: () => router.push('/cotizaciones/nueva') }}

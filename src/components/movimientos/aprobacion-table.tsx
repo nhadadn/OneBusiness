@@ -99,7 +99,11 @@ export function AprobacionTable({
 
   if (typeof negocioId !== 'number') {
     return (
-      <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
+      <EmptyState
+        icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+        title="Sin negocio seleccionado"
+        description="Selecciona un negocio para ver pendientes."
+      />
     );
   }
 
@@ -116,7 +120,13 @@ export function AprobacionTable({
   }
 
   if (items.length === 0) {
-    return <EmptyState icon={CircleCheck} title="Todo al dÃ­a" description="No hay movimientos pendientes ni aprobados por pagar." />;
+    return (
+      <EmptyState
+        icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+        title="Todo al día"
+        description="No hay movimientos pendientes ni aprobados por pagar."
+      />
+    );
   }
 
   return (

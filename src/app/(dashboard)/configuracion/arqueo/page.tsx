@@ -116,7 +116,7 @@ export default function ArqueoConfigPage() {
 
       {typeof negocioId !== 'number' ? (
         <EmptyState
-          icon={Landmark}
+          icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
           title="Sin negocio seleccionado"
           description="Selecciona un negocio para ver su arqueo."
         />
@@ -125,9 +125,17 @@ export default function ArqueoConfigPage() {
       ) : arqueoQuery.error instanceof Error ? (
         <ErrorState message={arqueoQuery.error.message} onRetry={() => arqueoQuery.refetch()} />
       ) : !arqueo ? (
-        <EmptyState icon={Landmark} title="Sin datos" description="No se pudo obtener el arqueo para este negocio." />
+        <EmptyState
+          icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
+          title="Sin datos"
+          description="No se pudo obtener el arqueo para este negocio."
+        />
       ) : arqueo.cuentas.length === 0 ? (
-        <EmptyState icon={Landmark} title="Sin cuentas activas" description="Configura cuentas bancarias para ver el arqueo." />
+        <EmptyState
+          icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
+          title="Sin cuentas activas"
+          description="Configura cuentas bancarias para ver el arqueo."
+        />
       ) : (
         <div className="space-y-6">
           <ArqueoSummary arqueo={arqueo} />

@@ -63,7 +63,7 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
   if (usuarios.length === 0) {
     return (
       <EmptyState
-        icon={UserRound}
+        icon={<UserRound className="h-12 w-12 text-muted-foreground" />}
         title="Sin usuarios"
         description="Agrega el primer usuario para este negocio."
         action={canEdit && onCreate ? { label: 'Nuevo usuario', onClick: onCreate } : undefined}

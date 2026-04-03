@@ -346,7 +346,7 @@ export default function DashboardPage() {
     return (
       <div className="container mx-auto space-y-6 py-6">
         <EmptyState
-          icon={Building2}
+          icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
           title="Sin negocios asignados"
           description="No tienes negocios asignados. Contacta a un administrador para que te asigne acceso."
         />
@@ -595,7 +595,7 @@ export default function DashboardPage() {
       return (
         <div className="container mx-auto space-y-6 py-6">
           <EmptyState
-            icon={Building2}
+            icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
             title="Selecciona un negocio"
             description="Selecciona un negocio en el header para ver el resumen."
           />

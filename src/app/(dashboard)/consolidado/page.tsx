@@ -85,7 +85,7 @@ export default function ConsolidadoPage() {
           <p className="text-slate-600">Vista consolidada por negocio con saldos al corte</p>
         </div>
         <EmptyState
-          icon={Landmark}
+          icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
           title="Sin información"
           description="No hay datos disponibles para el periodo seleccionado."
           action={{

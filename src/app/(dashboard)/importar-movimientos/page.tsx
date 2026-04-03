@@ -508,7 +508,11 @@ export default function ImportarMovimientosPage() {
           ) : null}
 
           {summary.total === 0 ? (
-            <EmptyState icon={FileSpreadsheet} title="Sin filas para previsualizar" description="El archivo no tiene datos en la hoja Movimientos." />
+            <EmptyState
+              icon={<FileSpreadsheet className="h-12 w-12 text-muted-foreground" />}
+              title="Sin filas para previsualizar"
+              description="El archivo no tiene datos en la hoja Movimientos."
+            />
           ) : (
             <div
               className={`rounded-lg border px-4 py-3 text-sm ${
@@ -650,7 +654,7 @@ export default function ImportarMovimientosPage() {
         result.kind === 'success' ? (
           <div className="mx-auto w-full max-w-2xl">
             <EmptyState
-              icon={CheckCircle2}
+              icon={<CheckCircle2 className="h-12 w-12 text-muted-foreground" />}
               title="Importación completada"
               description={`Se crearon ${result.creados} movimientos exitosamente. Todos están en estado Pendiente de aprobación.`}
               className="py-10"
