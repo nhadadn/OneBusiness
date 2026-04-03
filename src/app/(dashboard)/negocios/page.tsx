@@ -71,6 +71,8 @@ export default function NegociosPage() {
   };
 
   const negocios = negociosQuery.data?.data ?? [];
+  const needsInitialSelection = !isOwner && negocioOptions.length > 0 && typeof negocioId !== 'number';
+  const showLoading = negociosQuery.isLoading || needsInitialSelection;
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -104,11 +106,11 @@ export default function NegociosPage() {
         }
       />
 
-      {negociosQuery.isLoading ? <LoadingSkeleton variant="table" rows={5} /> : null}
-      {negociosQuery.error instanceof Error ? (
+      {showLoading ? <LoadingSkeleton variant="table" rows={5} /> : null}
+      {!showLoading && negociosQuery.error instanceof Error ? (
         <div className="text-sm text-red-600">{negociosQuery.error.message}</div>
       ) : null}
-      {!negociosQuery.isLoading && !(negociosQuery.error instanceof Error) ? (
+      {!showLoading && !(negociosQuery.error instanceof Error) ? (
         <NegociosTable negocios={negocios} canManage={isOwner} onEdit={handleEdit} onCreate={handleCreate} />
       ) : null}
 
