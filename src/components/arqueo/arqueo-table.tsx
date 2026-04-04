@@ -51,19 +51,39 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cuenta</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Saldo inicial</TableHead>
-                <TableHead className="text-right">Ingreso</TableHead>
-                <TableHead className="text-right">Trasp. ent.</TableHead>
-                <TableHead className="text-right">Egreso</TableHead>
-                <TableHead className="text-right">Trasp. sal.</TableHead>
-                <TableHead className="text-right">Saldo calculado</TableHead>
-                <TableHead className="text-right">Saldo real</TableHead>
-                <TableHead className="text-right">Diferencia</TableHead>
-                <TableHead className="text-right">Pendientes</TableHead>
-                <TableHead className="text-right">Comprometidos</TableHead>
+                <TableHead scope="col">Cuenta</TableHead>
+                <TableHead scope="col">Tipo</TableHead>
+                <TableHead scope="col">Estado</TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo inicial
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Ingreso
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Trasp. ent.
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Egreso
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Trasp. sal.
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo calculado
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo real
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Diferencia
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Pendientes
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Comprometidos
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

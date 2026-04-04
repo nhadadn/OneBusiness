@@ -54,12 +54,22 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead className="hidden sm:table-cell">Rubro</TableHead>
-              <TableHead className="hidden sm:table-cell">RFC</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="hidden sm:table-cell">Umbrales</TableHead>
-              {canManage ? <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead> : null}
+              <TableHead scope="col">Nombre</TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Rubro
+              </TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                RFC
+              </TableHead>
+              <TableHead scope="col">Estado</TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Umbrales
+              </TableHead>
+              {canManage ? (
+                <TableHead scope="col" className="w-[80px] px-2 sm:px-4">
+                  Acciones
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,7 +93,7 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                   {canManage ? (
                     <TableCell className="px-2 sm:px-4">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onEdit(negocio)}>
+                        <Button size="sm" variant="outline" onClick={() => onEdit(negocio)} aria-label="Editar negocio">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -94,6 +104,7 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                             setEliminarOpen(true);
                           }}
                           disabled={eliminar.isPending}
+                          aria-label="Eliminar negocio"
                         >
                           {eliminar.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>

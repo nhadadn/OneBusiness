@@ -149,14 +149,18 @@ export function AprobacionTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Negocio</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Cuenta</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[120px]">Acciones</TableHead>
+              <TableHead scope="col">Negocio</TableHead>
+              <TableHead scope="col">Fecha</TableHead>
+              <TableHead scope="col">Concepto</TableHead>
+              <TableHead scope="col">Tipo</TableHead>
+              <TableHead scope="col">Cuenta</TableHead>
+              <TableHead scope="col" className="text-right">
+                Monto
+              </TableHead>
+              <TableHead scope="col">Estado</TableHead>
+              <TableHead scope="col" className="w-[120px]">
+                Acciones
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

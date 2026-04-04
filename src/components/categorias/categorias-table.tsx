@@ -47,12 +47,16 @@ export function CategoriasTable({ categorias, onEditar, onDesactivar, puedeEdita
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Ámbito</TableHead>
-            <TableHead>Aprobación</TableHead>
-            <TableHead>Estado</TableHead>
-            {puedeEditar ? <TableHead className="w-[140px]">Acciones</TableHead> : null}
+            <TableHead scope="col">Nombre</TableHead>
+            <TableHead scope="col">Tipo</TableHead>
+            <TableHead scope="col">Ámbito</TableHead>
+            <TableHead scope="col">Aprobación</TableHead>
+            <TableHead scope="col">Estado</TableHead>
+            {puedeEditar ? (
+              <TableHead scope="col" className="w-[140px]">
+                Acciones
+              </TableHead>
+            ) : null}
           </TableRow>
         </TableHeader>
         <TableBody>

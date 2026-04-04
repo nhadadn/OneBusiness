@@ -112,7 +112,7 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Negocio</div>
               <Select value={filters.negocioId ? String(filters.negocioId) : ''} onValueChange={(val) => handleNegocioChange(Number(val))}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Negocio">
                   <SelectValue placeholder="Seleccionar negocio" />
                 </SelectTrigger>
                 <SelectContent>
@@ -128,7 +128,7 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             <div className="space-y-2">
               <div className="text-sm font-medium text-foreground">Tipo</div>
               <Select value={filters.tipo ?? 'all'} onValueChange={(val) => handleTipoChange(val === 'all' ? undefined : (val as TipoMovimiento))}>
-                <SelectTrigger>
+                <SelectTrigger aria-label="Tipo">
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -142,8 +142,11 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium text-foreground">Fecha desde</div>
+              <label htmlFor="movimientos-fecha-desde" className="text-sm font-medium text-foreground">
+                Fecha desde
+              </label>
               <input
+                id="movimientos-fecha-desde"
                 type="date"
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
                 value={filters.fechaDesde ?? ''}
@@ -152,8 +155,11 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium text-foreground">Fecha hasta</div>
+              <label htmlFor="movimientos-fecha-hasta" className="text-sm font-medium text-foreground">
+                Fecha hasta
+              </label>
               <input
+                id="movimientos-fecha-hasta"
                 type="date"
                 className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm"
                 value={filters.fechaHasta ?? ''}

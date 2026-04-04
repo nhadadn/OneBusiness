@@ -61,10 +61,10 @@ export function BusinessTable({ negocioId }: { negocioId?: number }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Rubro</TableHead>
-              <TableHead>Socios</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead scope="col">Nombre</TableHead>
+              <TableHead scope="col">Rubro</TableHead>
+              <TableHead scope="col">Socios</TableHead>
+              <TableHead scope="col">Estado</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -108,13 +108,21 @@ function CotizacionesTableSkeleton({ rows }: { rows: number }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[120px]">Folio</TableHead>
-            <TableHead className="w-[100px]">Fecha</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Concepto</TableHead>
-            <TableHead className="w-[110px] text-right">Total</TableHead>
-            <TableHead className="w-[110px]">Estado</TableHead>
-            <TableHead className="w-[80px]" />
+            <TableHead scope="col" className="w-[120px]">
+              Folio
+            </TableHead>
+            <TableHead scope="col" className="w-[100px]">
+              Fecha
+            </TableHead>
+            <TableHead scope="col">Cliente</TableHead>
+            <TableHead scope="col">Concepto</TableHead>
+            <TableHead scope="col" className="w-[110px] text-right">
+              Total
+            </TableHead>
+            <TableHead scope="col" className="w-[110px]">
+              Estado
+            </TableHead>
+            <TableHead scope="col" className="w-[80px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -399,13 +407,23 @@ export default function CotizacionesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">Folio</TableHead>
-                <TableHead className="w-[100px]">Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Concepto</TableHead>
-                <TableHead className="w-[110px] text-right">Total</TableHead>
-                <TableHead className="w-[110px]">Estado</TableHead>
-                <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                <TableHead scope="col" className="w-[120px]">
+                  Folio
+                </TableHead>
+                <TableHead scope="col" className="w-[100px]">
+                  Fecha
+                </TableHead>
+                <TableHead scope="col">Cliente</TableHead>
+                <TableHead scope="col">Concepto</TableHead>
+                <TableHead scope="col" className="w-[110px] text-right">
+                  Total
+                </TableHead>
+                <TableHead scope="col" className="w-[110px]">
+                  Estado
+                </TableHead>
+                <TableHead scope="col" className="w-[80px] text-right">
+                  Acciones
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -103,7 +103,7 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
     <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-3 sm:px-6">
       <button
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground md:hidden"
+        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
         aria-label="Abrir menú"
         onClick={() => setIsMobileNavOpen(true)}
       >

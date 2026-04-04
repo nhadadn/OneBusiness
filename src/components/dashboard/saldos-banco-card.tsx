@@ -83,10 +83,12 @@ export function SaldosBancoCard({ negocioId }: SaldosBancoCardProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Banco/Institución</TableHead>
-                  <TableHead>Cuenta</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Saldo</TableHead>
+                  <TableHead scope="col">Banco/Institución</TableHead>
+                  <TableHead scope="col">Cuenta</TableHead>
+                  <TableHead scope="col">Estado</TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Saldo
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

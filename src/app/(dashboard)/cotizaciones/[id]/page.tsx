@@ -489,12 +489,22 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[48px]">#</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead className="w-[80px]">UM</TableHead>
-                        <TableHead className="w-[90px] text-right">Cant</TableHead>
-                        <TableHead className="w-[120px] text-right">Precio Unit.</TableHead>
-                        <TableHead className="w-[120px] text-right">Importe</TableHead>
+                        <TableHead scope="col" className="w-[48px]">
+                          #
+                        </TableHead>
+                        <TableHead scope="col">Descripción</TableHead>
+                        <TableHead scope="col" className="w-[80px]">
+                          UM
+                        </TableHead>
+                        <TableHead scope="col" className="w-[90px] text-right">
+                          Cant
+                        </TableHead>
+                        <TableHead scope="col" className="w-[120px] text-right">
+                          Precio Unit.
+                        </TableHead>
+                        <TableHead scope="col" className="w-[120px] text-right">
+                          Importe
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

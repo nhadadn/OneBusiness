@@ -57,12 +57,20 @@ export function ConsolidadoPorNegocio({ negocios, className }: ConsolidadoPorNeg
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10" />
-                  <TableHead>Negocio</TableHead>
-                  <TableHead className="text-right">Ingresos</TableHead>
-                  <TableHead className="text-right">Egresos</TableHead>
-                  <TableHead className="text-right">Saldo neto</TableHead>
-                  <TableHead className="text-right">Pendientes</TableHead>
+                  <TableHead scope="col" className="w-10" />
+                  <TableHead scope="col">Negocio</TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Ingresos
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Egresos
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Saldo neto
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    Pendientes
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

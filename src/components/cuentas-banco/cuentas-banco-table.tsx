@@ -103,15 +103,31 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead className="hidden sm:table-cell">Disponibilidad</TableHead>
-            <TableHead className="hidden sm:table-cell">Banco</TableHead>
-            <TableHead className="hidden sm:table-cell">Titular</TableHead>
-            <TableHead className="hidden sm:table-cell text-right">Saldo inicial</TableHead>
-            <TableHead className="text-right">Saldo real</TableHead>
-            <TableHead className="hidden sm:table-cell">Estado</TableHead>
-            {canManage && <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead>}
+            <TableHead scope="col">Nombre</TableHead>
+            <TableHead scope="col">Tipo</TableHead>
+            <TableHead scope="col" className="hidden sm:table-cell">
+              Disponibilidad
+            </TableHead>
+            <TableHead scope="col" className="hidden sm:table-cell">
+              Banco
+            </TableHead>
+            <TableHead scope="col" className="hidden sm:table-cell">
+              Titular
+            </TableHead>
+            <TableHead scope="col" className="hidden sm:table-cell text-right">
+              Saldo inicial
+            </TableHead>
+            <TableHead scope="col" className="text-right">
+              Saldo real
+            </TableHead>
+            <TableHead scope="col" className="hidden sm:table-cell">
+              Estado
+            </TableHead>
+            {canManage && (
+              <TableHead scope="col" className="w-[80px] px-2 sm:px-4">
+                Acciones
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -135,10 +151,10 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
                 {canManage && (
                   <TableCell className="px-2 sm:px-4">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onEdit(cuenta)}>
+                      <Button size="sm" variant="outline" onClick={() => onEdit(cuenta)} aria-label="Editar cuenta bancaria">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => onEditSaldo(cuenta)}>
+                      <Button size="sm" variant="ghost" onClick={() => onEditSaldo(cuenta)} aria-label="Editar saldo real">
                         <Wallet className="h-4 w-4" />
                       </Button>
                       <Button
@@ -146,6 +162,7 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
                         variant="destructive"
                         onClick={() => handleDelete(cuenta)}
                         disabled={deleteCuenta.isPending}
+                        aria-label="Eliminar cuenta bancaria"
                       >
                         {deleteCuenta.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                       </Button>

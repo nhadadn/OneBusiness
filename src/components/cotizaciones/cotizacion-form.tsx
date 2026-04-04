@@ -677,13 +677,23 @@ export function CotizacionForm({ modo, cotizacionInicial, onSuccess }: Cotizacio
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[48px]">#</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="w-[100px]">U.M.</TableHead>
-                <TableHead className="w-[120px] text-right">Cantidad</TableHead>
-                <TableHead className="w-[140px] text-right">Precio Unit.</TableHead>
-                <TableHead className="w-[140px] text-right">Importe</TableHead>
-                <TableHead className="w-[48px]" />
+                <TableHead scope="col" className="w-[48px]">
+                  #
+                </TableHead>
+                <TableHead scope="col">Descripción</TableHead>
+                <TableHead scope="col" className="w-[100px]">
+                  U.M.
+                </TableHead>
+                <TableHead scope="col" className="w-[120px] text-right">
+                  Cantidad
+                </TableHead>
+                <TableHead scope="col" className="w-[140px] text-right">
+                  Precio Unit.
+                </TableHead>
+                <TableHead scope="col" className="w-[140px] text-right">
+                  Importe
+                </TableHead>
+                <TableHead scope="col" className="w-[48px]" />
               </TableRow>
             </TableHeader>
             <TableBody>

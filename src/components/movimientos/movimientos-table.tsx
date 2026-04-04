@@ -377,14 +377,24 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead className="hidden sm:table-cell">Categoría</TableHead>
-              <TableHead className="hidden sm:table-cell">Cuenta bancaria</TableHead>
-              <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[80px] px-2 sm:px-4">Acciones</TableHead>
+              <TableHead scope="col">Fecha</TableHead>
+              <TableHead scope="col">Concepto</TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Categoría
+              </TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Cuenta bancaria
+              </TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Tipo
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                Monto
+              </TableHead>
+              <TableHead scope="col">Estado</TableHead>
+              <TableHead scope="col" className="w-[80px] px-2 sm:px-4">
+                Acciones
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

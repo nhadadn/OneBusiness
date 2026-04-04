@@ -123,7 +123,7 @@ export function Sidebar() {
                         aria-current={isActive ? 'page' : undefined}
                         aria-label={collapsed ? item.label : undefined}
                         className={cn(
-                          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                           collapsed ? 'justify-center px-2' : 'justify-start',
                           isActive
                             ? 'bg-accent text-foreground'
