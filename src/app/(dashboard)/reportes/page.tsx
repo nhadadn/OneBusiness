@@ -7,6 +7,9 @@ import { ReporteFilters, periodoToFechas } from '@/components/reportes/reporte-f
 import { DistribucionNegocioChart } from '@/components/reportes/distribucion-negocio-chart';
 import { IngresosEgresosChart } from '@/components/reportes/ingresos-egresos-chart';
 import { KpiCards } from '@/components/reportes/kpi-cards';
+import { RankingNegociosTable } from '@/components/reportes/ranking-negocios-table';
+import { TendenciaBalanceChart } from '@/components/reportes/tendencia-balance-chart';
+import { TopCategoriasChart } from '@/components/reportes/top-categorias-chart';
 import { PageHeader } from '@/components/shared/page-header';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
@@ -121,6 +124,17 @@ export default function ReportesPage() {
         <IngresosEgresosChart data={datos?.ingresosPorMes ?? []} isLoading={isLoading} />
         <DistribucionNegocioChart data={datos?.distribucionPorNegocio ?? []} isLoading={isLoading} />
       </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <TendenciaBalanceChart data={datos?.tendenciaBalance ?? []} isLoading={isLoading} />
+        <TopCategoriasChart
+          datosIngreso={datos?.topCategoriasIngreso ?? []}
+          datosEgreso={datos?.topCategoriasEgreso ?? []}
+          isLoading={isLoading}
+        />
+      </div>
+
+      <RankingNegociosTable data={datos?.rankingNegocios ?? []} isLoading={isLoading} />
     </div>
   );
 }
