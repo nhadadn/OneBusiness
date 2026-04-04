@@ -1,6 +1,7 @@
 'use client';
 
-import { GitBranch, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { BarChart2, GitBranch, Layers, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ export function DivisionCard({
   onEditSubdivision,
   onDelete,
 }: DivisionCardProps) {
+  const router = useRouter();
+
   return (
     <Card className="border-border bg-card shadow-none">
       <CardHeader className="p-4">
@@ -46,6 +49,14 @@ export function DivisionCard({
               aria-label="Agregar sub-división"
             >
               <Plus className="mr-1 h-3 w-3" /> Sub-división
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => router.push(`/divisiones/${division.id}/dashboard`)}
+              aria-label="Ver dashboard de la división"
+            >
+              <BarChart2 className="h-3 w-3" />
             </Button>
             <Button size="sm" variant="ghost" onClick={() => onEditDivision(division)} aria-label="Editar división">
               <Pencil className="h-3 w-3" />
