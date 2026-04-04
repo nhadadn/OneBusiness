@@ -4,8 +4,6 @@ import { useEffect, useRef } from 'react';
 import type { Driver } from 'driver.js';
 import type { DriveStep } from 'driver.js';
 
-import { useTour } from '@/hooks/use-tour';
-
 export type FeatureTourProps = {
   steps: DriveStep[];
   tourId: string;
@@ -14,13 +12,12 @@ export type FeatureTourProps = {
 };
 
 export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: FeatureTourProps) {
-  const { shouldShowTour, markTourCompleted } = useTour(tourId);
   const driverRef = useRef<Driver | null>(null);
   const ignoreDestroyedRef = useRef(false);
 
   useEffect(() => {
     if (!autoStart) return;
-    if (!shouldShowTour) return;
+    if (!tourId) return;
     if (steps.length === 0) return;
 
     let cancelled = false;
@@ -34,7 +31,6 @@ export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: Fea
 
       const handleComplete = () => {
         if (ignoreDestroyedRef.current) return;
-        markTourCompleted();
         onComplete();
       };
 
@@ -63,7 +59,7 @@ export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: Fea
       driverRef.current?.destroy();
       driverRef.current = null;
     };
-  }, [autoStart, markTourCompleted, onComplete, shouldShowTour, steps]);
+  }, [autoStart, onComplete, steps, tourId]);
 
   return null;
 }

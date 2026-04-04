@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, CircleCheck, Loader2, Search, Upload, X } from 'lucide-react';
+import { Check, CircleCheck, HelpCircle, Loader2, Search, Upload, X } from 'lucide-react';
 
 import { MovimientosTable, useMovimientoInlineModeration } from '@/components/movimientos/movimientos-table';
+import { FeatureTour } from '@/components/shared';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
@@ -14,10 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/format';
+import { movimientosTourSteps } from '@/lib/tours/movimientos-tour';
 import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useMovimientos } from '@/hooks/use-movimientos';
 import { usePendingCount } from '@/hooks/use-pending-count';
+import { useTour } from '@/hooks/use-tour';
 import type { MovimientosFilters as FiltersState, MovimientoListItem } from '@/hooks/use-movimientos';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
@@ -77,6 +80,7 @@ export default function MovimientosPage() {
   const router = useRouter();
   const { negocioId, openNewMovimiento } = useDashboardContext();
   const pendingCountQuery = usePendingCount();
+  const movimientosTour = useTour('movimientos');
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const canImport = user?.rol === 'Dueño' || user?.rol === 'Socio' || user?.rol === 'Admin';
   const pendingCount = pendingCountQuery.data?.count;
@@ -154,40 +158,53 @@ export default function MovimientosPage() {
   if (!user) return null;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      <PageHeader
-        title="Movimientos"
-        description="Dashboard operativo de aprobación e historial"
-        action={
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
-            {canImport ? (
-              <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
-                <Upload className="h-4 w-4" aria-hidden="true" />
-                Importar
-              </Button>
-            ) : null}
-            <Button
-              variant="default"
-              onClick={openNewMovimiento}
-              data-tour="movimientos-new"
-            >
-              Nuevo movimiento
-            </Button>
-          </div>
-        }
-      />
+    <>
+      {movimientosTour.shouldShowTour ? (
+        <FeatureTour tourId="movimientos" steps={movimientosTourSteps} onComplete={movimientosTour.markTourCompleted} />
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <section className="lg:col-span-4">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="text-base font-semibold">Por aprobar</div>
-                  {typeof pendingCount === 'number' ? <Badge variant="outline">{pendingCount}</Badge> : null}
+      <div className="container mx-auto space-y-6 py-6">
+        <PageHeader
+          title="Movimientos"
+          description="Dashboard operativo de aprobación e historial"
+          action={
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={movimientosTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              {canImport ? (
+                <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  Importar
+                </Button>
+              ) : null}
+              <Button variant="default" onClick={openNewMovimiento} data-tour="movimientos-new">
+                Nuevo movimiento
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <section className="lg:col-span-4">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-base font-semibold">Por aprobar</div>
+                    {typeof pendingCount === 'number' ? <Badge variant="outline">{pendingCount}</Badge> : null}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {typeof negocioId === 'number' ? `Negocio ${negocioId}` : 'Selecciona un negocio'}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">{typeof negocioId === 'number' ? `Negocio ${negocioId}` : 'Selecciona un negocio'}</div>
-              </div>
             </div>
 
             <div className="mt-4 space-y-3">
@@ -360,7 +377,8 @@ export default function MovimientosPage() {
         </section>
       </div>
 
-      {moderation.dialogs}
-    </div>
+        {moderation.dialogs}
+      </div>
+    </>
   );
 }

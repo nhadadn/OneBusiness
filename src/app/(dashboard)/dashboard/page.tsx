@@ -2,12 +2,13 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Settings } from 'lucide-react';
+import { Building2, HelpCircle, Settings } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
 
+import { FeatureTour } from '@/components/shared';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
@@ -21,10 +22,12 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SaldosBancoCard } from '@/components/dashboard/saldos-banco-card';
+import { dashboardTourSteps } from '@/lib/tours/dashboard-tour';
 
 import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useApiClient } from '@/hooks/use-api-client';
+import { useTour } from '@/hooks/use-tour';
 
 type PeriodKey = 'este_mes' | 'mes_anterior' | 'ultimos_3_meses' | 'este_ano';
 
@@ -187,6 +190,7 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const { apiFetch } = useApiClient();
   const { negocioId: selectedNegocioId, setNegocioId } = useDashboardContext();
+  const dashboardTour = useTour('dashboard');
 
   const [period, setPeriod] = React.useState<PeriodKey>('este_mes');
   const [globalData, setGlobalData] = React.useState<DashboardResumenGlobalResponse['data'] | null>(null);
@@ -350,8 +354,27 @@ export default function DashboardPage() {
     });
 
     return (
-      <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
-        <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
+      <>
+        {dashboardTour.shouldShowTour ? (
+          <FeatureTour tourId="dashboard" steps={dashboardTourSteps} onComplete={dashboardTour.markTourCompleted} />
+        ) : null}
+        <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
+          <PageHeader
+            title="Dashboard"
+            description={`Bienvenido, ${user.nombre} (${user.rol})`}
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={dashboardTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            }
+          />
 
         <section className="space-y-3" data-tour="dashboard-pending">
           <div className="text-sm font-semibold text-foreground">Semáforo de negocios</div>
@@ -557,7 +580,8 @@ export default function DashboardPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -594,8 +618,27 @@ export default function DashboardPage() {
     const pendientes = operativoResumen?.cantidadPendientes ?? 0;
 
     return (
-      <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
-        <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
+      <>
+        {dashboardTour.shouldShowTour ? (
+          <FeatureTour tourId="dashboard" steps={dashboardTourSteps} onComplete={dashboardTour.markTourCompleted} />
+        ) : null}
+        <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
+          <PageHeader
+            title="Dashboard"
+            description={`Bienvenido, ${user.nombre} (${user.rol})`}
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={dashboardTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            }
+          />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3" data-tour="dashboard-summary">
           <div data-tour="dashboard-pending">
@@ -652,7 +695,8 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </>
     );
   }
 
