@@ -106,3 +106,29 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Driver.js custom styles */
+.driver-popover {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: var(--radius) !important;
+}
+.driver-popover-title {
+  color: hsl(var(--foreground)) !important;
+  font-weight: 600 !important;
+}
+.driver-popover-description {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.driver-popover-next-btn,
+.driver-popover-prev-btn,
+.driver-popover-done-btn {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border: none !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+}
+.driver-popover-close-btn {
+  color: hsl(var(--muted-foreground)) !important;
+}
