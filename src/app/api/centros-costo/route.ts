@@ -41,6 +41,13 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
+    const negocioIdRaw = searchParams.get('negocioId');
+    if (!negocioIdRaw || Number.isNaN(Number(negocioIdRaw))) {
+      return NextResponse.json(
+        { success: false, error: 'negocioId es requerido y debe ser un número' },
+        { status: 400 }
+      );
+    }
     const query = listQuerySchema.parse({ negocioId: searchParams.get('negocioId') });
 
     if (!canAccessNegocio(auth.user!, query.negocioId)) {

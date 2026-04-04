@@ -67,8 +67,8 @@ export default function DivisionesPage() {
 
   const selectedNegocioId = typeof negocioId === 'number' ? negocioId : null;
 
-  const treeQuery = useCentrosCostoTree({ negocioId: selectedNegocioId });
-  const listQuery = useCentrosCosto({ negocioId: selectedNegocioId });
+  const treeQuery = useCentrosCostoTree({ negocioId: selectedNegocioId ?? null, enabled: !!selectedNegocioId });
+  const listQuery = useCentrosCosto({ negocioId: selectedNegocioId ?? null, enabled: !!selectedNegocioId });
 
   const tree = treeQuery.data?.data ?? [];
 

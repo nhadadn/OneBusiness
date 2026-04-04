@@ -51,28 +51,36 @@ type CentrosCostoTreeResponse = {
 
 export function useCentrosCosto(params: { negocioId?: number | null; enabled?: boolean }) {
   const { apiFetch } = useApiClient();
+  const negocioId = typeof params.negocioId === 'number' ? params.negocioId : null;
+  const url = negocioId ? `/api/centros-costo?negocioId=${negocioId}` : null;
 
   return useQuery({
-    queryKey: ['centrosCosto', params.negocioId],
-    enabled: (params.enabled ?? true) && !!params.negocioId,
+    queryKey: ['centrosCosto', negocioId],
+    enabled: !!negocioId,
     staleTime: 30_000,
     queryFn: async () => {
-      const negocioId = params.negocioId!;
-      return apiJson<CentrosCostoListResponse>(apiFetch, `/api/centros-costo?negocioId=${negocioId}`, { negocioId });
+      if (!url || !negocioId) {
+        return { success: true, data: [] } satisfies CentrosCostoListResponse;
+      }
+      return apiJson<CentrosCostoListResponse>(apiFetch, url, { negocioId });
     },
   });
 }
 
 export function useCentrosCostoTree(params: { negocioId?: number | null; enabled?: boolean }) {
   const { apiFetch } = useApiClient();
+  const negocioId = typeof params.negocioId === 'number' ? params.negocioId : null;
+  const url = negocioId ? `/api/centros-costo/tree?negocioId=${negocioId}` : null;
 
   return useQuery({
-    queryKey: ['centrosCostoTree', params.negocioId],
-    enabled: (params.enabled ?? true) && !!params.negocioId,
+    queryKey: ['centrosCostoTree', negocioId],
+    enabled: !!negocioId,
     staleTime: 30_000,
     queryFn: async () => {
-      const negocioId = params.negocioId!;
-      return apiJson<CentrosCostoTreeResponse>(apiFetch, `/api/centros-costo/tree?negocioId=${negocioId}`, { negocioId });
+      if (!url || !negocioId) {
+        return { success: true, data: [] } satisfies CentrosCostoTreeResponse;
+      }
+      return apiJson<CentrosCostoTreeResponse>(apiFetch, url, { negocioId });
     },
   });
 }
