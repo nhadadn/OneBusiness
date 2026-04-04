@@ -24,6 +24,7 @@ export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: Fea
     if (steps.length === 0) return;
 
     let cancelled = false;
+    let driverObj: Driver | null = null;
     ignoreDestroyedRef.current = false;
 
     void (async () => {
@@ -48,6 +49,7 @@ export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: Fea
       } satisfies Parameters<typeof mod.driver>[0] & { closeBtnText: string };
 
       const instance = mod.driver(config as unknown as Parameters<typeof mod.driver>[0]);
+      driverObj = instance;
 
       driverRef.current = instance;
       instance.setSteps(steps);
@@ -57,6 +59,7 @@ export function FeatureTour({ steps, tourId, onComplete, autoStart = true }: Fea
     return () => {
       cancelled = true;
       ignoreDestroyedRef.current = true;
+      driverObj?.destroy();
       driverRef.current?.destroy();
       driverRef.current = null;
     };

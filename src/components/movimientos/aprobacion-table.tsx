@@ -191,10 +191,22 @@ export function AprobacionTable({
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {mov.estado === 'PENDIENTE' ? (
                         <>
-                          <Button size="sm" variant="ghost" onClick={() => onAprobar?.(mov)} disabled={isBusy} aria-label="Aprobar">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAprobar?.(mov)}
+                            disabled={isBusy}
+                            aria-label="Aprobar movimiento"
+                          >
                             <Check className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => onRechazar?.(mov)} disabled={isBusy} aria-label="Rechazar">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onRechazar?.(mov)}
+                            disabled={isBusy}
+                            aria-label="Rechazar movimiento"
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         </>
@@ -204,6 +216,7 @@ export function AprobacionTable({
                         <Button
                           size="sm"
                           variant="outline"
+                          aria-label="Marcar como pagado"
                           disabled={isBusy || typeof negocioId !== 'number'}
                           onClick={async () => {
                             if (typeof negocioId !== 'number') return;
