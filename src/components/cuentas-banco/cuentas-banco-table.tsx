@@ -98,6 +98,9 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
     );
   }
 
+  let tipoTourAssigned = false;
+  let assignTourAssigned = false;
+
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-card">
       <Table>
@@ -134,13 +137,19 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
           {cuentas.map((cuenta) => {
             const saldoInicial = parseMoney(cuenta.saldoInicial) ?? 0;
             const saldoReal = parseMoney(cuenta.saldoReal);
+            const addTipoTourAttr = !tipoTourAssigned;
+            if (addTipoTourAttr) tipoTourAssigned = true;
+            const addAssignTourAttr = canManage && !assignTourAssigned;
+            if (addAssignTourAttr) assignTourAssigned = true;
             return (
               <TableRow key={cuenta.id}>
                 <TableCell className="font-medium">{cuenta.nombre}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{cuenta.tipo}</Badge>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">{getDisponibilidadBadge(cuenta)}</TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  {addTipoTourAttr ? <span data-tour="cuentas-tipo">{getDisponibilidadBadge(cuenta)}</span> : getDisponibilidadBadge(cuenta)}
+                </TableCell>
                 <TableCell className="hidden sm:table-cell">{cuenta.bancoInstitucion ?? '—'}</TableCell>
                 <TableCell className="hidden sm:table-cell">{cuenta.titular ?? '—'}</TableCell>
                 <TableCell className="hidden sm:table-cell text-right font-mono">{formatCurrency(saldoInicial)}</TableCell>
@@ -151,7 +160,13 @@ export function CuentasBancoTable({ negocioId, onEdit, onEditSaldo, onCreate }: 
                 {canManage && (
                   <TableCell className="px-2 sm:px-4">
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => onEdit(cuenta)} aria-label="Editar cuenta bancaria">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onEdit(cuenta)}
+                        aria-label="Editar cuenta bancaria"
+                        data-tour={addAssignTourAttr ? 'cuentas-assign' : undefined}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => onEditSaldo(cuenta)} aria-label="Editar saldo real">

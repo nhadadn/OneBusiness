@@ -169,6 +169,7 @@ export default function MovimientosPage() {
             <Button
               variant="default"
               onClick={openNewMovimiento}
+              data-tour="movimientos-new"
             >
               Nuevo movimiento
             </Button>
@@ -279,7 +280,7 @@ export default function MovimientosPage() {
 
         <section className="lg:col-span-8">
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3" data-tour="movimientos-filters">
               <div className="flex flex-wrap items-center gap-2">
                 {(
                   [
@@ -352,7 +353,7 @@ export default function MovimientosPage() {
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4" data-tour="movimientos-table">
               <MovimientosTable filters={historyFilters} search={debouncedSearch} />
             </div>
           </div>

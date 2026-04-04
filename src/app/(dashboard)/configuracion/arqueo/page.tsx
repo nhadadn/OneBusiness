@@ -85,7 +85,7 @@ export default function ArqueoConfigPage() {
         action={
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
-              <SelectTrigger className="w-[240px]">
+              <SelectTrigger className="w-[240px]" data-tour="arqueo-selector">
                 <SelectValue placeholder="Seleccionar negocio" />
               </SelectTrigger>
               <SelectContent>
@@ -142,7 +142,9 @@ export default function ArqueoConfigPage() {
       ) : (
         <div className="space-y-6">
           <ArqueoSummary arqueo={arqueo} />
-          <ArqueoTable cuentas={arqueo.cuentas} />
+          <div data-tour="arqueo-table">
+            <ArqueoTable cuentas={arqueo.cuentas} />
+          </div>
         </div>
       )}
     </div>

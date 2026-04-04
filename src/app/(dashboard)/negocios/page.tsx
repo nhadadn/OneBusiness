@@ -97,7 +97,7 @@ export default function NegociosPage() {
             ) : null}
 
             {isOwner ? (
-              <Button variant="default" onClick={handleCreate}>
+              <Button variant="default" onClick={handleCreate} data-tour="negocios-new">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuevo negocio
               </Button>
@@ -111,7 +111,9 @@ export default function NegociosPage() {
         <div className="text-sm text-red-600">{negociosQuery.error.message}</div>
       ) : null}
       {!showLoading && !(negociosQuery.error instanceof Error) ? (
-        <NegociosTable negocios={negocios} canManage={isOwner} onEdit={handleEdit} onCreate={handleCreate} />
+        <div data-tour="negocios-table">
+          <NegociosTable negocios={negocios} canManage={isOwner} onEdit={handleEdit} onCreate={handleCreate} />
+        </div>
       ) : null}
 
       <NegocioDialog open={dialogOpen} onOpenChange={setDialogOpen} negocio={selectedNegocio} />

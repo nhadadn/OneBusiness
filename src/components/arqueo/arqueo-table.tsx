@@ -81,7 +81,7 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                 <TableHead scope="col" className="text-right">
                   Pendientes
                 </TableHead>
-                <TableHead scope="col" className="text-right">
+                <TableHead scope="col" className="text-right" data-tour="arqueo-comprometidos">
                   Comprometidos
                 </TableHead>
               </TableRow>

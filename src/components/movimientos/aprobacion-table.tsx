@@ -126,6 +126,8 @@ export function AprobacionTable({
     );
   }
 
+  let payTourAssigned = false;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -172,6 +174,8 @@ export function AprobacionTable({
               const isPaying = marcarPagado.isPending;
               const isCanceling = cancelarMovimiento.isPending;
               const isBusy = isApproving || isRejecting || isPaying || isCanceling;
+              const addPayTourAttr = mov.estado === 'APROBADO' && !payTourAssigned;
+              if (addPayTourAttr) payTourAssigned = true;
               return (
                 <TableRow
                   key={mov.id}
@@ -217,6 +221,7 @@ export function AprobacionTable({
                           size="sm"
                           variant="outline"
                           aria-label="Marcar como pagado"
+                          data-tour={addPayTourAttr ? 'movimientos-pay' : undefined}
                           disabled={isBusy || typeof negocioId !== 'number'}
                           onClick={async () => {
                             if (typeof negocioId !== 'number') return;

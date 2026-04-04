@@ -48,6 +48,8 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
     );
   }
 
+  let editTourAssigned = false;
+
   return (
     <>
       <div className="overflow-x-auto rounded-md border border-border bg-card">
@@ -75,6 +77,8 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
           <TableBody>
             {negocios.map((negocio) => {
               const umbralAlerta = parseMoney(negocio.umbralAlerta);
+              const addEditTourAttr = canManage && !editTourAssigned;
+              if (addEditTourAttr) editTourAssigned = true;
               return (
                 <TableRow key={negocio.id}>
                   <TableCell className="font-medium">{negocio.nombre}</TableCell>
@@ -93,7 +97,13 @@ export function NegociosTable({ negocios, canManage, onEdit, onCreate }: Negocio
                   {canManage ? (
                     <TableCell className="px-2 sm:px-4">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onEdit(negocio)} aria-label="Editar negocio">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onEdit(negocio)}
+                          aria-label="Editar negocio"
+                          data-tour={addEditTourAttr ? 'negocios-edit' : undefined}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button

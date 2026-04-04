@@ -356,6 +356,8 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
     );
   }
 
+  let approveTourAssigned = false;
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -405,6 +407,8 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
               const isRejecting = moderation.action?.type === 'rechazar' && moderation.action.id === mov.id;
               const isDeleting = moderation.action?.type === 'eliminar' && moderation.action.id === mov.id;
               const error = moderation.actionError[mov.id];
+              const addApproveTourAttr = canApproveReject && !approveTourAssigned;
+              if (addApproveTourAttr) approveTourAssigned = true;
               return (
                 <TableRow key={mov.id}>
                   <TableCell className="whitespace-nowrap">{formatDateDMY(mov.fecha)}</TableCell>
@@ -430,6 +434,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                           onClick={() => moderation.handleApprove(mov)}
                           disabled={isApproving || isRejecting || isDeleting}
                           aria-label="Aprobar"
+                          data-tour={addApproveTourAttr ? 'movimientos-approve' : undefined}
                           className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}

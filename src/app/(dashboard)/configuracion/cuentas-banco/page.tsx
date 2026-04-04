@@ -105,7 +105,7 @@ export default function CuentasBancoPage() {
             </Select>
 
             {canManage && (
-              <Button variant="default" onClick={handleCreate} disabled={typeof negocioId !== 'number'}>
+              <Button variant="default" onClick={handleCreate} disabled={typeof negocioId !== 'number'} data-tour="cuentas-new">
                 <Plus className="mr-2 h-4 w-4" />
                 Nueva cuenta
               </Button>
@@ -117,7 +117,9 @@ export default function CuentasBancoPage() {
       {needsInitialSelection ? (
         <LoadingSkeleton variant="table" rows={5} />
       ) : (
-        <CuentasBancoTable negocioId={negocioId} onEdit={handleEdit} onEditSaldo={handleEditSaldo} onCreate={handleCreate} />
+        <div data-tour="cuentas-table">
+          <CuentasBancoTable negocioId={negocioId} onEdit={handleEdit} onEditSaldo={handleEditSaldo} onCreate={handleCreate} />
+        </div>
       )}
 
       <CuentaBancoDialog open={dialogOpen} onOpenChange={setDialogOpen} cuenta={selectedCuenta} negocioId={negocioId} />

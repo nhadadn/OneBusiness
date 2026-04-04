@@ -350,10 +350,10 @@ export default function DashboardPage() {
     });
 
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
         <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
 
-        <section className="space-y-3">
+        <section className="space-y-3" data-tour="dashboard-pending">
           <div className="text-sm font-semibold text-foreground">Semáforo de negocios</div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((n) => {
@@ -418,7 +418,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4" data-tour="dashboard-summary">
           <div className="text-sm font-semibold text-foreground">Resumen financiero consolidado</div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <MetricCard
@@ -594,11 +594,13 @@ export default function DashboardPage() {
     const pendientes = operativoResumen?.cantidadPendientes ?? 0;
 
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
         <PageHeader title="Dashboard" description={`Bienvenido, ${user.nombre} (${user.rol})`} />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <MetricCard title="Pendientes" value={`${pendientes}`} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3" data-tour="dashboard-summary">
+          <div data-tour="dashboard-pending">
+            <MetricCard title="Pendientes" value={`${pendientes}`} />
+          </div>
           <MetricCard
             title="Balance (período)"
             value={formatCurrency(balance)}

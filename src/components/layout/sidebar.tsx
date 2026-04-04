@@ -89,7 +89,7 @@ export function Sidebar() {
       </div>
 
       <TooltipProvider delayDuration={100}>
-        <nav className="flex-1 space-y-4 overflow-y-auto p-2">
+        <nav className="flex-1 space-y-4 overflow-y-auto p-2" data-tour="dashboard-nav">
           {sections.map((section) => {
             const visibleItems = section.items.filter((item) => item.show !== false);
             if (visibleItems.length === 0) return null;
