@@ -28,7 +28,7 @@ export function NegocioDialog({ open, onOpenChange, negocio }: NegocioDialogProp
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {negocio && isLoading ? <div className="text-sm text-slate-600">Cargando negocio...</div> : null}
+        {negocio && isLoading ? <div className="text-sm text-muted-foreground">Cargando negocio...</div> : null}
         {negocio && error instanceof Error ? <div className="text-sm text-red-600">{error.message}</div> : null}
 
         {!negocio || detail ? (

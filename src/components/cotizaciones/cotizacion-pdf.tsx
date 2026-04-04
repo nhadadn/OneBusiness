@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 
+import { formatCurrency } from '@/lib/format';
+
 type CotizacionPDFProps = {
   cotizacion: {
     folio: string;
@@ -184,7 +186,7 @@ function formatearMontoMXN(valor: string | null | undefined): string {
   if (!valor) return '—';
   const parsed = Number.parseFloat(valor);
   if (!Number.isFinite(parsed) || Number.isNaN(parsed)) return '—';
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(parsed);
+  return formatCurrency(parsed);
 }
 
 function formatearNumero(valor: string | null | undefined): string {

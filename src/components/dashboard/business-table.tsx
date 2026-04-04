@@ -53,24 +53,24 @@ export function BusinessTable({ negocioId }: { negocioId?: number }) {
   const isLoading = isDueño || typeof negocioId === 'number' ? singleQuery.isLoading : manyQueries.some((q) => q.isLoading);
 
   return (
-    <Card className="border-slate-200">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-base text-[#1e3a5f]">{title}</CardTitle>
+        <CardTitle className="text-base text-primary">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Rubro</TableHead>
-              <TableHead>Socios</TableHead>
-              <TableHead>Estado</TableHead>
+              <TableHead scope="col">Nombre</TableHead>
+              <TableHead scope="col">Rubro</TableHead>
+              <TableHead scope="col">Socios</TableHead>
+              <TableHead scope="col">Estado</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-slate-600">
+                <TableCell colSpan={4} className="text-muted-foreground">
                   {isLoading ? 'Cargando...' : 'Sin negocios'}
                 </TableCell>
               </TableRow>
@@ -78,9 +78,9 @@ export function BusinessTable({ negocioId }: { negocioId?: number }) {
               items.map((n) => (
                 <TableRow key={n.id}>
                   <TableCell className="font-medium">{n.nombre}</TableCell>
-                  <TableCell className="text-slate-600">{n.rubro ?? '—'}</TableCell>
-                  <TableCell className="text-slate-600">{n.tieneSocios ? 'Sí' : 'No'}</TableCell>
-                  <TableCell className="text-slate-600">{n.activo === false ? 'Inactivo' : 'Activo'}</TableCell>
+                  <TableCell className="text-muted-foreground">{n.rubro ?? '—'}</TableCell>
+                  <TableCell className="text-muted-foreground">{n.tieneSocios ? 'Sí' : 'No'}</TableCell>
+                  <TableCell className="text-muted-foreground">{n.activo === false ? 'Inactivo' : 'Activo'}</TableCell>
                 </TableRow>
               ))
             )}

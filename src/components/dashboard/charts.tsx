@@ -16,14 +16,14 @@ export function DashboardCharts({ rol, selectedNegocio, negocioId }: DashboardCh
   const scope = isDueño ? (selectedNegocio ? `Negocio ${selectedNegocio}` : 'Holding') : negocioId ? `Negocio ${negocioId}` : 'Negocio';
 
   return (
-    <Card className="border-slate-200">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-base text-[#1e3a5f]">
+        <CardTitle className="text-base text-primary">
           {title} • {scope}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed border-slate-200 text-sm text-slate-600">
+        <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed border-border text-sm text-muted-foreground">
           Gráficos pendientes de integrar con API de métricas
         </div>
       </CardContent>

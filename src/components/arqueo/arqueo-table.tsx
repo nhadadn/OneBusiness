@@ -5,15 +5,11 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ArqueoNegocio, EstadoArqueo } from '@/types/cuenta_banco.types';
 
 type ArqueoCuentaItem = ArqueoNegocio['cuentas'][number];
-
-function formatCurrencyMXN(value: number | null): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(value: string | null | undefined): number {
   const parsed = Number.parseFloat(value ?? '0');
@@ -35,7 +31,7 @@ function getStatusVariant(estadoArqueo: EstadoArqueo) {
     case 'FALTANTE':
       return { label: 'Faltante', className: 'bg-red-50 text-red-700 hover:bg-red-50' };
     case 'SIN_SALDO_REAL':
-      return { label: 'Sin saldo real', className: 'bg-slate-50 text-slate-700 hover:bg-slate-50' };
+      return { label: 'Sin saldo real', className: 'bg-muted text-foreground hover:bg-muted' };
   }
 }
 
@@ -55,19 +51,39 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Cuenta</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Saldo inicial</TableHead>
-                <TableHead className="text-right">Ingreso</TableHead>
-                <TableHead className="text-right">Trasp. ent.</TableHead>
-                <TableHead className="text-right">Egreso</TableHead>
-                <TableHead className="text-right">Trasp. sal.</TableHead>
-                <TableHead className="text-right">Saldo calculado</TableHead>
-                <TableHead className="text-right">Saldo real</TableHead>
-                <TableHead className="text-right">Diferencia</TableHead>
-                <TableHead className="text-right">Pendientes</TableHead>
-                <TableHead className="text-right">Comprometidos</TableHead>
+                <TableHead scope="col">Cuenta</TableHead>
+                <TableHead scope="col">Tipo</TableHead>
+                <TableHead scope="col">Estado</TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo inicial
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Ingreso
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Trasp. ent.
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Egreso
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Trasp. sal.
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo calculado
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Saldo real
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Diferencia
+                </TableHead>
+                <TableHead scope="col" className="text-right">
+                  Pendientes
+                </TableHead>
+                <TableHead scope="col" className="text-right" data-tour="arqueo-comprometidos">
+                  Comprometidos
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -96,19 +112,37 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                         {status.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrencyMXN(c.saldoInicial)}</TableCell>
-                    <TableCell className="text-right font-mono text-emerald-700">{formatCurrencyMXN(c.ingreso)}</TableCell>
-                    <TableCell className="text-right font-mono text-emerald-700">{formatCurrencyMXN(c.traspasoEntrada)}</TableCell>
-                    <TableCell className="text-right font-mono text-red-700">{formatCurrencyMXN(c.egreso)}</TableCell>
-                    <TableCell className="text-right font-mono text-red-700">{formatCurrencyMXN(c.traspasoSalida)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrencyMXN(c.saldoCalculado)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrencyMXN(c.saldoReal)}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {typeof c.saldoInicial === 'number' && Number.isFinite(c.saldoInicial) ? formatCurrency(c.saldoInicial) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-emerald-700">
+                      {typeof c.ingreso === 'number' && Number.isFinite(c.ingreso) ? formatCurrency(c.ingreso) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-emerald-700">
+                      {typeof c.traspasoEntrada === 'number' && Number.isFinite(c.traspasoEntrada)
+                        ? formatCurrency(c.traspasoEntrada)
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-red-700">
+                      {typeof c.egreso === 'number' && Number.isFinite(c.egreso) ? formatCurrency(c.egreso) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-red-700">
+                      {typeof c.traspasoSalida === 'number' && Number.isFinite(c.traspasoSalida)
+                        ? formatCurrency(c.traspasoSalida)
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {typeof c.saldoCalculado === 'number' && Number.isFinite(c.saldoCalculado) ? formatCurrency(c.saldoCalculado) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {typeof c.saldoReal === 'number' && Number.isFinite(c.saldoReal) ? formatCurrency(c.saldoReal) : '—'}
+                    </TableCell>
                     <TableCell className={cn('text-right font-mono', diffClassName)}>
-                      {formatCurrencyMXN(c.diferencia)}
+                      {typeof c.diferencia === 'number' && Number.isFinite(c.diferencia) ? formatCurrency(c.diferencia) : '—'}
                     </TableCell>
                     <TableCell className="text-right">
                       {c.movimientosPendientes > 0 ? (
-                        <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">
+                        <Badge variant="outline" className="bg-muted text-foreground hover:bg-muted">
                           {c.movimientosPendientes}
                         </Badge>
                       ) : (
@@ -117,7 +151,7 @@ export function ArqueoTable({ cuentas, className }: ArqueoTableProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       {c.movimientosAprobadosNoPagados > 0 ? (
-                        <span className="text-sm font-medium text-amber-800">{`${c.movimientosAprobadosNoPagados} comprometidos (${formatCurrencyMXN(totalAprobadoNoPagado)})`}</span>
+                        <span className="text-sm font-medium text-warning-foreground">{`${c.movimientosAprobadosNoPagados} comprometidos (${formatCurrency(totalAprobadoNoPagado)})`}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}

@@ -2,18 +2,23 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Landmark } from 'lucide-react';
+import { HelpCircle, Landmark } from 'lucide-react';
 
 import { ArqueoSummary } from '@/components/arqueo/arqueo-summary';
 import { ArqueoTable } from '@/components/arqueo/arqueo-table';
+import { FeatureTour } from '@/components/shared';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { ConfigListLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { arqueoTourSteps } from '@/lib/tours/arqueo-tour';
 import { useArqueoNegocio } from '@/hooks/use-arqueo';
 import { useAuth } from '@/hooks/use-auth';
 import { useNegocios } from '@/hooks/use-negocios';
+import { useTour } from '@/hooks/use-tour';
 
 type NegocioOption = { id: number; label: string };
 
@@ -28,6 +33,7 @@ function getTodayYYYYMMDD(): string {
 export default function ArqueoConfigPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const arqueoTour = useTour('arqueo');
 
   useEffect(() => {
     if (!user) return;
@@ -67,7 +73,7 @@ export default function ArqueoConfigPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <ConfigListLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
@@ -75,66 +81,94 @@ export default function ArqueoConfigPage() {
   if (!user) return null;
   if (user.rol !== 'Dueño' && user.rol !== 'Admin') return null;
 
+  const needsInitialSelection = negocioOptions.length > 0 && typeof negocioId !== 'number';
+
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Arqueo</h1>
-          <p className="text-slate-600">Revisa saldos calculados vs saldos reales por cuenta y consolidado por negocio.</p>
-        </div>
+    <>
+      {arqueoTour.shouldShowTour ? (
+        <FeatureTour tourId="arqueo" steps={arqueoTourSteps} onComplete={arqueoTour.markTourCompleted} />
+      ) : null}
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
-            <SelectTrigger className="w-[240px]">
-              <SelectValue placeholder="Seleccionar negocio" />
-            </SelectTrigger>
-            <SelectContent>
-              {negocioOptions.map((opt) => (
-                <SelectItem key={opt.id} value={String(opt.id)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <div className="container mx-auto space-y-6 py-6">
+        <PageHeader
+          title="Arqueo de caja"
+          action={
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={arqueoTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              <Select value={negocioId ? String(negocioId) : ''} onValueChange={(val) => setNegocioId(Number(val))}>
+                <SelectTrigger className="w-[240px]" data-tour="arqueo-selector">
+                  <SelectValue placeholder="Seleccionar negocio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {negocioOptions.map((opt) => (
+                    <SelectItem key={opt.id} value={String(opt.id)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="fecha-corte">
-              Fecha de corte
-            </label>
-            <Input
-              id="fecha-corte"
-              type="date"
-              value={fechaCorte}
-              onChange={(e) => {
-                setFechaCorte(e.target.value);
-              }}
-              className="w-[240px]"
-            />
-          </div>
-        </div>
-      </div>
-
-      {typeof negocioId !== 'number' ? (
-        <EmptyState
-          icon={Landmark}
-          title="Sin negocio seleccionado"
-          description="Selecciona un negocio para ver su arqueo."
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="fecha-corte">
+                  Fecha de corte
+                </label>
+                <Input
+                  id="fecha-corte"
+                  type="date"
+                  value={fechaCorte}
+                  onChange={(e) => {
+                    setFechaCorte(e.target.value);
+                  }}
+                  className="w-[240px]"
+                />
+              </div>
+            </div>
+          }
         />
-      ) : arqueoQuery.isLoading ? (
-        <ConfigListLoader />
-      ) : arqueoQuery.error instanceof Error ? (
-        <ErrorState message={arqueoQuery.error.message} onRetry={() => arqueoQuery.refetch()} />
-      ) : !arqueo ? (
-        <EmptyState icon={Landmark} title="Sin datos" description="No se pudo obtener el arqueo para este negocio." />
-      ) : arqueo.cuentas.length === 0 ? (
-        <EmptyState icon={Landmark} title="Sin cuentas activas" description="Configura cuentas bancarias para ver el arqueo." />
-      ) : (
-        <div className="space-y-6">
-          <ArqueoSummary arqueo={arqueo} />
-          <ArqueoTable cuentas={arqueo.cuentas} />
-        </div>
-      )}
-    </div>
+
+        {needsInitialSelection ? (
+          <LoadingSkeleton variant="table" rows={5} />
+        ) : typeof negocioId !== 'number' ? (
+          <EmptyState
+            icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
+            title="Sin negocio seleccionado"
+            description="Selecciona un negocio para ver su arqueo."
+          />
+        ) : arqueoQuery.isLoading ? (
+          <LoadingSkeleton variant="table" rows={5} />
+        ) : arqueoQuery.error instanceof Error ? (
+          <ErrorState message={arqueoQuery.error.message} onRetry={() => arqueoQuery.refetch()} />
+        ) : !arqueo ? (
+          <EmptyState
+            icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
+            title="Sin datos"
+            description="No se pudo obtener el arqueo para este negocio."
+          />
+        ) : arqueo.cuentas.length === 0 ? (
+          <EmptyState
+            icon={<Landmark className="h-12 w-12 text-muted-foreground" />}
+            title="Sin cuentas activas"
+            description="Configura cuentas bancarias para ver el arqueo."
+          />
+        ) : (
+          <div className="space-y-6">
+            <ArqueoSummary arqueo={arqueo} />
+            <div data-tour="arqueo-table">
+              <ArqueoTable cuentas={arqueo.cuentas} />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

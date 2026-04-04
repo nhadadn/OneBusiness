@@ -4,13 +4,9 @@ import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ArqueoNegocio, EstadoArqueo } from '@/types/cuenta_banco.types';
-
-function formatCurrencyMXN(value: number | null): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function formatInteger(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '—';
@@ -31,7 +27,7 @@ function getStatusVariant(estadoArqueo: EstadoArqueo) {
     case 'FALTANTE':
       return { label: 'Faltante', className: 'bg-red-50 text-red-700 hover:bg-red-50' };
     case 'SIN_SALDO_REAL':
-      return { label: 'Sin saldo real', className: 'bg-slate-50 text-slate-700 hover:bg-slate-50' };
+      return { label: 'Sin saldo real', className: 'bg-muted text-foreground hover:bg-muted' };
   }
 }
 
@@ -71,13 +67,13 @@ export function ArqueoSummary({ arqueo, className }: ArqueoSummaryProps) {
               </Badge>
             ) : null}
             {arqueo.totales.movimientosPendientes > 0 ? (
-              <Badge variant="outline" className="bg-slate-50 text-slate-700 hover:bg-slate-50">
+              <Badge variant="outline" className="bg-muted text-foreground hover:bg-muted">
                 {formatInteger(arqueo.totales.movimientosPendientes)} pendientes
               </Badge>
             ) : null}
             {Math.abs(totalComprometido) > 0.000001 ? (
               <Badge variant="outline" className="bg-amber-50 text-amber-800 hover:bg-amber-50">
-                {formatCurrencyMXN(totalComprometido)} comprometido
+                {formatCurrency(totalComprometido)} comprometido
               </Badge>
             ) : null}
           </div>
@@ -88,42 +84,72 @@ export function ArqueoSummary({ arqueo, className }: ArqueoSummaryProps) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Saldo inicial</div>
-            <div className="mt-1 font-mono text-base">{formatCurrencyMXN(arqueo.totales.saldoInicial)}</div>
+            <div className="mt-1 font-mono text-base">
+              {typeof arqueo.totales.saldoInicial === 'number' && Number.isFinite(arqueo.totales.saldoInicial)
+                ? formatCurrency(arqueo.totales.saldoInicial)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Ingreso (aprobado)</div>
-            <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrencyMXN(arqueo.totales.ingreso)}</div>
+            <div className="mt-1 font-mono text-base text-emerald-700">
+              {typeof arqueo.totales.ingreso === 'number' && Number.isFinite(arqueo.totales.ingreso)
+                ? formatCurrency(arqueo.totales.ingreso)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Traspaso entrada (aprobado)</div>
-            <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrencyMXN(arqueo.totales.traspasoEntrada)}</div>
+            <div className="mt-1 font-mono text-base text-emerald-700">
+              {typeof arqueo.totales.traspasoEntrada === 'number' && Number.isFinite(arqueo.totales.traspasoEntrada)
+                ? formatCurrency(arqueo.totales.traspasoEntrada)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Egreso (aprobado)</div>
-            <div className="mt-1 font-mono text-base text-red-700">{formatCurrencyMXN(arqueo.totales.egreso)}</div>
+            <div className="mt-1 font-mono text-base text-red-700">
+              {typeof arqueo.totales.egreso === 'number' && Number.isFinite(arqueo.totales.egreso)
+                ? formatCurrency(arqueo.totales.egreso)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Traspaso salida (aprobado)</div>
-            <div className="mt-1 font-mono text-base text-red-700">{formatCurrencyMXN(arqueo.totales.traspasoSalida)}</div>
+            <div className="mt-1 font-mono text-base text-red-700">
+              {typeof arqueo.totales.traspasoSalida === 'number' && Number.isFinite(arqueo.totales.traspasoSalida)
+                ? formatCurrency(arqueo.totales.traspasoSalida)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Saldo calculado</div>
-            <div className="mt-1 font-mono text-base">{formatCurrencyMXN(arqueo.totales.saldoCalculado)}</div>
+            <div className="mt-1 font-mono text-base">
+              {typeof arqueo.totales.saldoCalculado === 'number' && Number.isFinite(arqueo.totales.saldoCalculado)
+                ? formatCurrency(arqueo.totales.saldoCalculado)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Saldo real</div>
-            <div className="mt-1 font-mono text-base">{formatCurrencyMXN(arqueo.totales.saldoReal)}</div>
+            <div className="mt-1 font-mono text-base">
+              {typeof arqueo.totales.saldoReal === 'number' && Number.isFinite(arqueo.totales.saldoReal)
+                ? formatCurrency(arqueo.totales.saldoReal)
+                : '—'}
+            </div>
           </div>
           <div className="rounded-md border border-border p-3">
             <div className="text-xs text-muted-foreground">Diferencia</div>
             <div className={cn('mt-1 font-mono text-base', diffClassName)}>
-              {formatCurrencyMXN(arqueo.totales.diferencia)}
+              {typeof arqueo.totales.diferencia === 'number' && Number.isFinite(arqueo.totales.diferencia)
+                ? formatCurrency(arqueo.totales.diferencia)
+                : '—'}
             </div>
           </div>
           {Math.abs(totalComprometido) > 0.000001 ? (
             <div className="rounded-md border border-border p-3">
               <div className="text-xs text-muted-foreground">Comprometido (aprobado no pagado)</div>
-              <div className="mt-1 font-mono text-base text-amber-800">{formatCurrencyMXN(totalComprometido)}</div>
+              <div className="mt-1 font-mono text-base text-amber-800">{formatCurrency(totalComprometido)}</div>
             </div>
           ) : null}
         </div>

@@ -32,6 +32,18 @@ const config: Config = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -47,6 +59,13 @@ const config: Config = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        estado: {
+          pendiente: "hsl(var(--estado-pendiente))",
+          aprobado: "hsl(var(--estado-aprobado))",
+          pagado: "hsl(var(--estado-pagado))",
+          rechazado: "hsl(var(--estado-rechazado))",
+          cancelado: "hsl(var(--estado-cancelado))",
         },
         brand: {
           primary: "#1e3a5f",

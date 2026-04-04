@@ -2,19 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, CircleCheck, Loader2, Search, Upload, X } from 'lucide-react';
+import { Check, CircleCheck, HelpCircle, Loader2, Search, Upload, X } from 'lucide-react';
 
 import { MovimientosTable, useMovimientoInlineModeration } from '@/components/movimientos/movimientos-table';
+import { FeatureTour } from '@/components/shared';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { MovimientosLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
+import { movimientosTourSteps } from '@/lib/tours/movimientos-tour';
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
-import { useApiClient } from '@/hooks/use-api-client';
 import { useMovimientos } from '@/hooks/use-movimientos';
+import { usePendingCount } from '@/hooks/use-pending-count';
+import { useTour } from '@/hooks/use-tour';
 import type { MovimientosFilters as FiltersState, MovimientoListItem } from '@/hooks/use-movimientos';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
@@ -26,10 +32,6 @@ function getDefaultRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   return { fechaDesde: toISODate(start), fechaHasta: toISODate(now) };
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function parseMoney(raw: string) {
@@ -76,67 +78,12 @@ function getRangeFromPreset(preset: PeriodPreset) {
 export default function MovimientosPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const { apiFetch } = useApiClient();
+  const { negocioId, openNewMovimiento } = useDashboardContext();
+  const pendingCountQuery = usePendingCount();
+  const movimientosTour = useTour('movimientos');
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const canImport = user?.rol === 'Dueño' || user?.rol === 'Socio' || user?.rol === 'Admin';
-
-  const [negocioId, setNegocioId] = useState<number | null>(null);
-  const [pendingCount, setPendingCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    if (typeof negocioId === 'number') return;
-
-    const raw = localStorage.getItem('lastNegocioId');
-    const fromStorage = raw ? Number(raw) : Number.NaN;
-    const desired = Number.isFinite(fromStorage) ? fromStorage : null;
-    const desiredAllowed = typeof desired === 'number' && (user.negocios ?? []).includes(desired);
-    const next = desiredAllowed ? desired : (user.negocios ?? [])[0] ?? null;
-    setNegocioId(typeof next === 'number' ? next : null);
-  }, [negocioId, user]);
-
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const nextId = (event as CustomEvent<{ negocioId: number }>).detail?.negocioId;
-      if (typeof nextId !== 'number') return;
-      setNegocioId(nextId);
-    };
-    window.addEventListener('onebusiness:negocio-changed', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:negocio-changed', handler as EventListener);
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-
-    const fetchCount = async () => {
-      try {
-        const res = await apiFetch('/api/movimientos/pendientes/count', { headers: { 'Cache-Control': 'no-store' } });
-        if (!res.ok) {
-          if (active) setPendingCount(null);
-          return;
-        }
-        const data = (await res.json()) as { success: boolean; count: number };
-        if (!active) return;
-        setPendingCount(typeof data.count === 'number' ? data.count : null);
-      } catch {
-        if (!active) return;
-        setPendingCount(null);
-      }
-    };
-
-    void fetchCount();
-
-    const handler = () => {
-      void fetchCount();
-    };
-
-    window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    return () => {
-      active = false;
-      window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    };
-  }, [apiFetch, user]);
+  const pendingCount = pendingCountQuery.data?.count;
 
   const [pendientesPage, setPendientesPage] = useState(1);
   useEffect(() => {
@@ -153,14 +100,6 @@ export default function MovimientosPage() {
   const moderation = useMovimientoInlineModeration({
     negocioId: typeof negocioId === 'number' ? negocioId : undefined,
   });
-
-  useEffect(() => {
-    const handler = () => {
-      pendientesQuery.refetch();
-    };
-    window.addEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-  }, [pendientesQuery]);
 
   const pendientesItems = useMemo(() => {
     const base = pendientesQuery.data?.items ?? [];
@@ -212,56 +151,84 @@ export default function MovimientosPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <MovimientosLoader />
+        <LoadingSkeleton variant="table" rows={5} />
       </div>
     );
   }
   if (!user) return null;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Movimientos</h1>
-          <p className="text-slate-600">Dashboard operativo de aprobación e historial</p>
-        </div>
-        {canImport ? (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
-              <Upload className="h-4 w-4" />
-              Importar
-            </Button>
-          </div>
-        ) : null}
-      </div>
+    <>
+      {movimientosTour.shouldShowTour ? (
+        <FeatureTour tourId="movimientos" steps={movimientosTourSteps} onComplete={movimientosTour.markTourCompleted} />
+      ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <section className="lg:col-span-4">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="text-base font-semibold">Por aprobar</div>
-                  {typeof pendingCount === 'number' ? <Badge variant="outline">{pendingCount}</Badge> : null}
+      <div className="container mx-auto space-y-6 py-6">
+        <PageHeader
+          title="Movimientos"
+          description="Dashboard operativo de aprobación e historial"
+          action={
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={movimientosTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              {canImport ? (
+                <Button variant="outline" onClick={() => router.push('/importar-movimientos')}>
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  Importar
+                </Button>
+              ) : null}
+              <Button variant="default" onClick={openNewMovimiento} data-tour="movimientos-new">
+                Nuevo movimiento
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <section className="lg:col-span-4">
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="text-base font-semibold">Por aprobar</div>
+                    {typeof pendingCount === 'number' ? <Badge variant="outline">{pendingCount}</Badge> : null}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {typeof negocioId === 'number' ? `Negocio ${negocioId}` : 'Selecciona un negocio'}
+                  </div>
                 </div>
-                <div className="text-sm text-muted-foreground">{typeof negocioId === 'number' ? `Negocio ${negocioId}` : 'Selecciona un negocio'}</div>
-              </div>
             </div>
 
             <div className="mt-4 space-y-3">
               {typeof negocioId !== 'number' ? (
-                <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
+                <EmptyState
+                  icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+                  title="Sin negocio seleccionado"
+                  description="Selecciona un negocio para ver pendientes."
+                />
               ) : pendientesQuery.isLoading ? (
-                <MovimientosLoader />
+                <LoadingSkeleton variant="table" rows={5} />
               ) : pendientesQuery.error instanceof Error ? (
                 <ErrorState message={pendientesQuery.error.message} onRetry={() => pendientesQuery.refetch()} />
               ) : pendientesItems.length === 0 ? (
-                <EmptyState icon={CircleCheck} title="Todo al día" description="Todo al día — no hay movimientos por aprobar" />
+                <EmptyState
+                  icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+                  title="Todo al día"
+                  description="Todo al día — no hay movimientos por aprobar"
+                />
               ) : (
                 <div className="rounded-lg border border-border bg-background">
                   <div className="divide-y divide-border">
                     {pendientesItems.map((mov: MovimientoListItem) => {
-                      const amount = formatCurrencyMXN(parseMoney(mov.monto));
+                      const amount = formatCurrency(parseMoney(mov.monto));
                       const isApproving = moderation.action?.type === 'aprobar' && moderation.action.id === mov.id;
                       const isRejecting = moderation.action?.type === 'rechazar' && moderation.action.id === mov.id;
                       const disabled = isApproving || isRejecting;
@@ -271,7 +238,7 @@ export default function MovimientosPage() {
                             <div className="flex items-center justify-between gap-3">
                               <div className="text-xs text-muted-foreground">{formatDateDMY(mov.fecha)}</div>
                               <div
-                                className={`font-mono text-sm ${mov.tipo === 'INGRESO' ? 'text-emerald-700' : mov.tipo === 'EGRESO' ? 'text-red-700' : 'text-slate-700'}`}
+                                className={`font-mono text-sm ${mov.tipo === 'INGRESO' ? 'text-emerald-700' : mov.tipo === 'EGRESO' ? 'text-red-700' : 'text-foreground'}`}
                               >
                                 {amount}
                               </div>
@@ -318,7 +285,7 @@ export default function MovimientosPage() {
                   <Button type="button" variant="outline" size="sm" onClick={() => setPendientesPage((p) => Math.max(1, p - 1))} disabled={!pendientesCanPrev}>
                     Anterior
                   </Button>
-                  <div className="text-sm text-slate-600">{`Página ${pendientesPage} de ${pendientesTotalPages}`}</div>
+                  <div className="text-sm text-muted-foreground">{`Página ${pendientesPage} de ${pendientesTotalPages}`}</div>
                   <Button type="button" variant="outline" size="sm" onClick={() => setPendientesPage((p) => p + 1)} disabled={!pendientesCanNext}>
                     Siguiente
                   </Button>
@@ -330,7 +297,7 @@ export default function MovimientosPage() {
 
         <section className="lg:col-span-8">
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3" data-tour="movimientos-filters">
               <div className="flex flex-wrap items-center gap-2">
                 {(
                   [
@@ -403,14 +370,15 @@ export default function MovimientosPage() {
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4" data-tour="movimientos-table">
               <MovimientosTable filters={historyFilters} search={debouncedSearch} />
             </div>
           </div>
         </section>
       </div>
 
-      {moderation.dialogs}
-    </div>
+        {moderation.dialogs}
+      </div>
+    </>
   );
 }

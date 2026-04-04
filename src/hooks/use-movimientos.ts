@@ -7,11 +7,6 @@ import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
-function dispatchUiRefresh(eventName: string) {
-  if (typeof window === 'undefined') return;
-  window.dispatchEvent(new CustomEvent(eventName));
-}
-
 type ApiFetchFn = (url: string, options?: RequestInit & { negocioId?: number | null }) => Promise<Response>;
 
 type ApiErrorPayload = {
@@ -252,8 +247,7 @@ export function useReenviarMovimiento() {
       await queryClient.invalidateQueries({ queryKey: ['movimiento', variables.id] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
     },
   });
 }
@@ -300,8 +294,7 @@ export function useCreateMovimiento() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
     },
   });
 }
@@ -320,8 +313,7 @@ export function useAprobarMovimiento() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
     },
   });
 }
@@ -341,8 +333,7 @@ export function useRechazarMovimiento() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
     },
   });
 }
@@ -361,8 +352,7 @@ export function useDeleteMovimiento() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
     },
   });
 }
@@ -382,8 +372,7 @@ export function useMarcarPagado() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
       toast.success('Movimiento marcado como pagado', { duration: 2500 });
     },
     onError: (error) => {
@@ -407,8 +396,7 @@ export function useCancelarMovimiento() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
       await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
-      dispatchUiRefresh('onebusiness:movimientos-refresh');
-      dispatchUiRefresh('onebusiness:pending-count-refresh');
+      await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
       toast.success('Movimiento cancelado', { duration: 2500 });
     },
     onError: (error) => {

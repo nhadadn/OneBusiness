@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
 import { useCuentasBanco } from '@/hooks/use-cuentas-banco';
 import { useApiClient } from '@/hooks/use-api-client';
 
@@ -45,12 +47,9 @@ function todayISO() {
   return new Date().toISOString().split('T')[0]!;
 }
 
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
-
 export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
   const cuentasQuery = useCuentasBanco({ negocioId });
   const cuentas = cuentasQuery.data?.data ?? [];
 
@@ -93,7 +92,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   if (typeof negocioId !== 'number') {
     return (
       <EmptyState
-        icon={Building2}
+        icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
         title="Selecciona un negocio"
         description="Selecciona un negocio en el header para crear un traspaso."
       />
@@ -101,7 +100,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   }
 
   if (cuentasQuery.isLoading) {
-    return <div className="text-sm text-slate-600">Cargando cuentas...</div>;
+    return <div className="text-sm text-muted-foreground">Cargando cuentas...</div>;
   }
 
   if (cuentasQuery.error instanceof Error) {
@@ -111,7 +110,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
   if (cuentas.length < 2) {
     return (
       <EmptyState
-        icon={Building2}
+        icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
         title="Se requieren al menos 2 cuentas"
         description="Crea al menos dos cuentas bancarias para poder realizar un traspaso."
       />
@@ -146,8 +145,9 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
             }
 
             toast.success('Traspaso creado — 2 movimientos pendientes', { duration: 2500 });
-            window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-            window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+            await queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+            await queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+            await queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
             onSuccess();
           } catch (e) {
             toast.error(e instanceof Error ? e.message : 'No se pudo crear el traspaso', { duration: 5000 });
@@ -268,7 +268,7 @@ export function TraspasoForm({ negocioId, onSuccess }: TraspasoFormProps) {
             Se crearán 2 movimientos pendientes de aprobación: EGRESO de{' '}
             <span className="font-semibold text-foreground">{cuentaOrigen?.nombre ?? '—'}</span> e INGRESO en{' '}
             <span className="font-semibold text-foreground">{cuentaDestino?.nombre ?? '—'}</span> por{' '}
-            <span className="font-semibold text-foreground">{montoOk ? formatCurrencyMXN(monto) : '—'}</span>
+            <span className="font-semibold text-foreground">{montoOk ? formatCurrency(monto) : '—'}</span>
           </div>
         </div>
 

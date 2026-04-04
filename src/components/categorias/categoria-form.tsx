@@ -188,8 +188,8 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
           />
         ) : (
           <div className="space-y-1">
-            <div className="text-sm font-medium text-slate-700">Tipo</div>
-            <div className="text-sm text-slate-600">{toUiTipo(categoria!.tipo) === 'ingreso' ? 'Ingreso' : 'Egreso'}</div>
+            <div className="text-sm font-medium text-foreground">Tipo</div>
+            <div className="text-sm text-muted-foreground">{toUiTipo(categoria!.tipo) === 'ingreso' ? 'Ingreso' : 'Egreso'}</div>
           </div>
         )}
 
@@ -209,8 +209,8 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
           />
         ) : null}
 
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-4">
-          <div className="text-sm font-medium text-slate-900">Configuración de aprobación</div>
+        <div className="space-y-2 rounded-lg border border-border bg-card p-4">
+          <div className="text-sm font-medium text-foreground">Configuración de aprobación</div>
 
           <FormField
             control={form.control}
@@ -254,7 +254,7 @@ export function CategoriaForm({ categoria, negocioId, rol, onExito, onCancelar }
                       disabled={mutation.isPending}
                     />
                   </FormControl>
-                  <div className="text-xs text-slate-600">Movimientos por debajo de este monto se aprobarán automáticamente</div>
+                  <div className="text-xs text-muted-foreground">Movimientos por debajo de este monto se aprobarán automáticamente</div>
                   <FormMessage />
                 </FormItem>
               )}

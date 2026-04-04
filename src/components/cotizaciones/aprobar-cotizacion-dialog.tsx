@@ -91,7 +91,7 @@ export function AprobarCotizacionDialog({
         </DialogHeader>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-900">Número de OC</label>
+          <label className="text-sm font-medium text-foreground">Número de OC</label>
           <Input value={numeroOc} onChange={(e) => setNumeroOc(e.target.value)} placeholder="OC-001" disabled={!canApprove || isSubmitting} />
         </div>
 

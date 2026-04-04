@@ -24,7 +24,7 @@ export function NegociosSelector({ value, onChange, options, className }: Negoci
         return (
           <label
             key={opt.id}
-            className="flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 p-3 hover:bg-slate-50"
+            className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-3 hover:bg-slate-50"
           >
             <Checkbox
               checked={checked}
@@ -43,4 +43,3 @@ export function NegociosSelector({ value, onChange, options, className }: Negoci
     </div>
   );
 }
-

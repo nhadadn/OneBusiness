@@ -408,8 +408,8 @@ export function MovimientoForm({
         />
 
         {tipo === 'TRASPASO_SALIDA' && (
-          <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-4">
-            <div className="text-sm text-slate-700">Se crearán automáticamente 2 movimientos espejo</div>
+          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+            <div className="text-sm text-foreground">Se crearán automáticamente 2 movimientos espejo</div>
 
             <FormField
               control={form.control}
@@ -487,11 +487,11 @@ export function MovimientoForm({
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <div className="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-3">
+                <div className="flex items-start gap-3 rounded-md border border-border bg-card p-3">
                   <Checkbox checked={Boolean(field.value)} onCheckedChange={(val) => field.onChange(val === true)} disabled={isSubmitting} />
                   <div className="space-y-1">
-                    <div className="text-sm font-medium text-slate-900">Este movimiento ya fue efectuado</div>
-                    <div className="text-xs text-slate-600">Se registrará como PAGADO y afectará el saldo inmediatamente.</div>
+                    <div className="text-sm font-medium text-foreground">Este movimiento ya fue efectuado</div>
+                    <div className="text-xs text-muted-foreground">Se registrará como PAGADO y afectará el saldo inmediatamente.</div>
                   </div>
                 </div>
               </FormControl>

@@ -11,12 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/format';
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useMovimientoDetalle, useRechazarMovimiento, useReenviarMovimiento } from '@/hooks/use-movimientos';
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -141,7 +138,7 @@ export default function MovimientoDetallePage() {
   if (detalleQuery.isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <div className="text-sm text-slate-600">Cargando movimiento...</div>
+        <div className="text-sm text-muted-foreground">Cargando movimiento...</div>
       </div>
     );
   }
@@ -152,7 +149,7 @@ export default function MovimientoDetallePage() {
         <Button variant="ghost" className="px-0" onClick={() => router.push('/movimientos')}>
           ← Volver
         </Button>
-        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-red-600">{detalleQuery.error.message}</div>
+        <div className="rounded-lg border border-border bg-card p-6 text-sm text-red-600">{detalleQuery.error.message}</div>
       </div>
     );
   }
@@ -170,7 +167,7 @@ export default function MovimientoDetallePage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Movimiento #{detalle.id}</h1>
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               {detalle.concepto} · {monto}
             </p>
           </div>
@@ -199,51 +196,51 @@ export default function MovimientoDetallePage() {
         ) : null}
       </div>
 
-      <Card className="border-slate-200">
+      <Card className="border-border">
         <CardHeader>
-          <CardTitle className="text-base text-[#1e3a5f]">Detalle</CardTitle>
+          <CardTitle className="text-base text-primary">Detalle</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Negocio</div>
+            <div className="text-muted-foreground">Negocio</div>
             <div className="font-medium">#{detalle.negocioId}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Tipo</div>
+            <div className="text-muted-foreground">Tipo</div>
             <div className="font-medium">{detalle.tipo}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Estado</div>
+            <div className="text-muted-foreground">Estado</div>
             <div className="font-medium">{detalle.estado}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Fecha</div>
+            <div className="text-muted-foreground">Fecha</div>
             <div className="font-medium">{detalle.fecha}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Monto</div>
+            <div className="text-muted-foreground">Monto</div>
             <div className="font-mono font-medium">{monto}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Cuenta</div>
+            <div className="text-muted-foreground">Cuenta</div>
             <div className="font-medium">{detalle.cuentaBanco.nombre}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Tercero</div>
+            <div className="text-muted-foreground">Tercero</div>
             <div className="font-medium">{detalle.tercero ?? '—'}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Creado por</div>
+            <div className="text-muted-foreground">Creado por</div>
             <div className="font-medium">
               {detalle.creadoPor.nombre} ({detalle.creadoPor.email})
             </div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Versión</div>
+            <div className="text-muted-foreground">Versión</div>
             <div className="font-medium">v{detalle.version}</div>
           </div>
           <div className="flex justify-between gap-4">
-            <div className="text-slate-600">Traspaso</div>
+            <div className="text-muted-foreground">Traspaso</div>
             <div className="font-medium">{detalle.traspasoRefId ? `Espejo #${detalle.traspasoRefId}` : '—'}</div>
           </div>
           {detalle.estado === 'RECHAZADO' ? (
@@ -256,9 +253,9 @@ export default function MovimientoDetallePage() {
       </Card>
 
       {canReenviar ? (
-        <Card className="border-slate-200">
+        <Card className="border-border">
           <CardHeader>
-            <CardTitle className="text-base text-[#1e3a5f]">Reenviar para aprobación</CardTitle>
+            <CardTitle className="text-base text-primary">Reenviar para aprobación</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>

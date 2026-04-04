@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useCancelarMovimiento, useMarcarPagado, useMovimientos, type MovimientoListItem } from '@/hooks/use-movimientos';
 import type { TipoMovimiento } from '@/types/movimiento.types';
 
@@ -24,10 +25,6 @@ export type AprobacionTableProps = {
   onAprobar?: (mov: MovimientoListItem) => void;
   onRechazar?: (mov: MovimientoListItem) => void;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function parseMoney(raw: string) {
   const num = Number(raw);
@@ -99,7 +96,11 @@ export function AprobacionTable({
 
   if (typeof negocioId !== 'number') {
     return (
-      <EmptyState icon={CircleCheck} title="Sin negocio seleccionado" description="Selecciona un negocio para ver pendientes." />
+      <EmptyState
+        icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+        title="Sin negocio seleccionado"
+        description="Selecciona un negocio para ver pendientes."
+      />
     );
   }
 
@@ -116,8 +117,16 @@ export function AprobacionTable({
   }
 
   if (items.length === 0) {
-    return <EmptyState icon={CircleCheck} title="Todo al dÃ­a" description="No hay movimientos pendientes ni aprobados por pagar." />;
+    return (
+      <EmptyState
+        icon={<CircleCheck className="h-12 w-12 text-muted-foreground" />}
+        title="Todo al día"
+        description="No hay movimientos pendientes ni aprobados por pagar."
+      />
+    );
   }
+
+  let payTourAssigned = false;
 
   return (
     <div className="space-y-3">
@@ -135,32 +144,38 @@ export function AprobacionTable({
           </SelectContent>
         </Select>
 
-        <div className="text-sm text-slate-600">{`Página ${page} de ${totalPages}`}</div>
+        <div className="text-sm text-muted-foreground">{`Página ${page} de ${totalPages}`}</div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Negocio</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Cuenta</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[120px]">Acciones</TableHead>
+              <TableHead scope="col">Negocio</TableHead>
+              <TableHead scope="col">Fecha</TableHead>
+              <TableHead scope="col">Concepto</TableHead>
+              <TableHead scope="col">Tipo</TableHead>
+              <TableHead scope="col">Cuenta</TableHead>
+              <TableHead scope="col" className="text-right">
+                Monto
+              </TableHead>
+              <TableHead scope="col">Estado</TableHead>
+              <TableHead scope="col" className="w-[120px]">
+                Acciones
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((mov) => {
-              const monto = formatCurrencyMXN(parseMoney(mov.monto));
+              const monto = formatCurrency(parseMoney(mov.monto));
               const negocioLabel = negocioOptions.find((n) => n.id === mov.negocioId)?.label ?? `Negocio ${mov.negocioId}`;
               const isApproving = false;
               const isRejecting = false;
               const isPaying = marcarPagado.isPending;
               const isCanceling = cancelarMovimiento.isPending;
               const isBusy = isApproving || isRejecting || isPaying || isCanceling;
+              const addPayTourAttr = mov.estado === 'APROBADO' && !payTourAssigned;
+              if (addPayTourAttr) payTourAssigned = true;
               return (
                 <TableRow
                   key={mov.id}
@@ -180,10 +195,22 @@ export function AprobacionTable({
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {mov.estado === 'PENDIENTE' ? (
                         <>
-                          <Button size="sm" variant="ghost" onClick={() => onAprobar?.(mov)} disabled={isBusy} aria-label="Aprobar">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAprobar?.(mov)}
+                            disabled={isBusy}
+                            aria-label="Aprobar movimiento"
+                          >
                             <Check className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => onRechazar?.(mov)} disabled={isBusy} aria-label="Rechazar">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onRechazar?.(mov)}
+                            disabled={isBusy}
+                            aria-label="Rechazar movimiento"
+                          >
                             <X className="h-4 w-4" />
                           </Button>
                         </>
@@ -193,6 +220,8 @@ export function AprobacionTable({
                         <Button
                           size="sm"
                           variant="outline"
+                          aria-label="Marcar como pagado"
+                          data-tour={addPayTourAttr ? 'movimientos-pay' : undefined}
                           disabled={isBusy || typeof negocioId !== 'number'}
                           onClick={async () => {
                             if (typeof negocioId !== 'number') return;

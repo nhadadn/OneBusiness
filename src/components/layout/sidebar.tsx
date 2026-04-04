@@ -23,15 +23,10 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
+import { usePendingCount } from '@/hooks/use-pending-count';
 
-type PendingCountResponse = {
-  success: boolean;
-  count: number;
-};
-
-type NavItem = {
+export type NavItem = {
   label: string;
   href: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -39,7 +34,7 @@ type NavItem = {
   showBadge?: boolean;
 };
 
-type NavSection = {
+export type NavSection = {
   title?: string;
   items: NavItem[];
 };
@@ -58,73 +53,12 @@ function getInitials(nombre: string) {
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { apiFetch } = useApiClient();
 
   const [collapsed, setCollapsed] = React.useState(false);
-  const [pendingCount, setPendingCount] = React.useState<number | null>(null);
-  const [refreshTick, setRefreshTick] = React.useState(0);
+  const pendingCountQuery = usePendingCount();
 
-  const canSeeUsuarios = user?.rol === 'Dueño' || user?.rol === 'Admin';
-  const canSeeArqueo = user?.rol === 'Dueño' || user?.rol === 'Admin';
-  const canSeeConsolidado = user?.rol === 'Dueño';
-
-  React.useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const res = await apiFetch('/api/movimientos/pendientes/count');
-        if (!res.ok) {
-          if (active) setPendingCount(null);
-          return;
-        }
-        const data = (await res.json()) as PendingCountResponse;
-        if (!active) return;
-        setPendingCount(typeof data.count === 'number' ? data.count : null);
-      } catch {
-        if (!active) return;
-        setPendingCount(null);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [apiFetch, pathname, refreshTick]);
-
-  React.useEffect(() => {
-    const handler = () => setRefreshTick((v) => v + 1);
-    window.addEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:pending-count-refresh', handler as EventListener);
-  }, []);
-
-  const sections: NavSection[] = [
-    {
-      items: [
-        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { label: 'Negocios', href: '/negocios', icon: Building2 },
-        { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
-        { label: 'Reportes', href: '/reportes', icon: FileText },
-      ],
-    },
-    {
-      title: 'Operaciones',
-      items: [
-        { label: 'Movimientos', href: '/movimientos', icon: Banknote },
-        { label: 'Cotizaciones', href: '/cotizaciones', icon: ClipboardList },
-        { label: 'Por aprobar', href: '/movimientos/aprobacion', icon: Timer, showBadge: true },
-      ],
-    },
-    {
-      title: 'Configuración',
-      items: [
-        { label: 'Cuentas bancarias', href: '/configuracion/cuentas-banco', icon: Banknote },
-        { label: 'Arqueo', href: '/configuracion/arqueo', icon: Landmark, show: canSeeArqueo },
-        { label: 'Categorías', href: '/configuracion/categorias', icon: Tags },
-        { label: 'Usuarios', href: '/usuarios', icon: Users, show: canSeeUsuarios },
-      ],
-    },
-  ];
+  const sections = React.useMemo(() => buildNavSections(user?.rol), [user?.rol]);
+  const pendingCount = pendingCountQuery.data?.count;
 
   const widthClassName = collapsed ? 'w-16' : 'w-60';
 
@@ -155,7 +89,7 @@ export function Sidebar() {
       </div>
 
       <TooltipProvider delayDuration={100}>
-        <nav className="flex-1 space-y-4 overflow-y-auto p-2">
+        <nav className="flex-1 space-y-4 overflow-y-auto p-2" data-tour="dashboard-nav">
           {sections.map((section) => {
             const visibleItems = section.items.filter((item) => item.show !== false);
             if (visibleItems.length === 0) return null;
@@ -171,7 +105,7 @@ export function Sidebar() {
                     const isActive = pathname === item.href;
                     const Icon = item.icon;
 
-                    const badge = item.showBadge && pendingCount && pendingCount > 0 ? (
+                    const badge = item.showBadge && typeof pendingCount === 'number' && pendingCount > 0 ? (
                       <Badge
                         variant="outline"
                         className={cn(
@@ -189,7 +123,7 @@ export function Sidebar() {
                         aria-current={isActive ? 'page' : undefined}
                         aria-label={collapsed ? item.label : undefined}
                         className={cn(
-                          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                          'relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                           collapsed ? 'justify-center px-2' : 'justify-start',
                           isActive
                             ? 'bg-accent text-foreground'
@@ -260,5 +194,39 @@ export function Sidebar() {
       </div>
     </aside>
   );
+}
+
+export function buildNavSections(userRole?: string): NavSection[] {
+  const canSeeUsuarios = userRole === 'Dueño' || userRole === 'Admin';
+  const canSeeArqueo = userRole === 'Dueño' || userRole === 'Admin';
+  const canSeeConsolidado = userRole === 'Dueño';
+
+  return [
+    {
+      items: [
+        { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { label: 'Negocios', href: '/negocios', icon: Building2 },
+        { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
+        { label: 'Reportes', href: '/reportes', icon: FileText },
+      ],
+    },
+    {
+      title: 'Operaciones',
+      items: [
+        { label: 'Movimientos', href: '/movimientos', icon: Banknote },
+        { label: 'Cotizaciones', href: '/cotizaciones', icon: ClipboardList },
+        { label: 'Por aprobar', href: '/movimientos/aprobacion', icon: Timer, showBadge: true },
+      ],
+    },
+    {
+      title: 'Configuración',
+      items: [
+        { label: 'Cuentas bancarias', href: '/configuracion/cuentas-banco', icon: Banknote },
+        { label: 'Arqueo', href: '/configuracion/arqueo', icon: Landmark, show: canSeeArqueo },
+        { label: 'Categorías', href: '/configuracion/categorias', icon: Tags },
+        { label: 'Usuarios', href: '/usuarios', icon: Users, show: canSeeUsuarios },
+      ],
+    },
+  ];
 }
 

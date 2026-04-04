@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { Categoria } from '@/types/categoria.types';
@@ -25,10 +26,6 @@ function todayISO() {
 
 function round2(value: number) {
   return Math.round(value * 100) / 100;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function parseOptionalNumber(raw: string): number | undefined {
@@ -680,13 +677,23 @@ export function CotizacionForm({ modo, cotizacionInicial, onSuccess }: Cotizacio
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[48px]">#</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="w-[100px]">U.M.</TableHead>
-                <TableHead className="w-[120px] text-right">Cantidad</TableHead>
-                <TableHead className="w-[140px] text-right">Precio Unit.</TableHead>
-                <TableHead className="w-[140px] text-right">Importe</TableHead>
-                <TableHead className="w-[48px]" />
+                <TableHead scope="col" className="w-[48px]">
+                  #
+                </TableHead>
+                <TableHead scope="col">Descripción</TableHead>
+                <TableHead scope="col" className="w-[100px]">
+                  U.M.
+                </TableHead>
+                <TableHead scope="col" className="w-[120px] text-right">
+                  Cantidad
+                </TableHead>
+                <TableHead scope="col" className="w-[140px] text-right">
+                  Precio Unit.
+                </TableHead>
+                <TableHead scope="col" className="w-[140px] text-right">
+                  Importe
+                </TableHead>
+                <TableHead scope="col" className="w-[48px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -832,15 +839,15 @@ export function CotizacionForm({ modo, cotizacionInicial, onSuccess }: Cotizacio
           <div className="text-right text-sm">
             <div className="flex justify-end gap-3">
               <div className="text-muted-foreground">Subtotal:</div>
-              <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.subtotal)}</div>
+              <div className="w-[140px] font-mono">{formatCurrency(totals.subtotal)}</div>
             </div>
             <div className="flex justify-end gap-3">
               <div className="text-muted-foreground">IVA (16%):</div>
-              <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.iva)}</div>
+              <div className="w-[140px] font-mono">{formatCurrency(totals.iva)}</div>
             </div>
             <div className="flex justify-end gap-3 font-semibold">
               <div>Total:</div>
-              <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.total)}</div>
+              <div className="w-[140px] font-mono">{formatCurrency(totals.total)}</div>
             </div>
           </div>
         </div>

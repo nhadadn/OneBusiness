@@ -29,9 +29,9 @@ export function ConsolidadoFilters({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Estado</div>
+          <div className="text-sm font-medium text-foreground">Estado</div>
           <Select value={filters.estado} onValueChange={(val) => setEstado(val as ConsolidadoFilters['estado'])} disabled={disabled}>
-            <SelectTrigger>
+            <SelectTrigger aria-label="Estado">
               <SelectValue placeholder="Seleccionar estado" />
             </SelectTrigger>
             <SelectContent>
@@ -43,13 +43,13 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Tipo</div>
+          <div className="text-sm font-medium text-foreground">Tipo</div>
           <Select
             value={filters.tipo ?? 'all'}
             onValueChange={(val) => setTipo(val === 'all' ? undefined : (val as ConsolidadoFilters['tipo']))}
             disabled={disabled}
           >
-            <SelectTrigger>
+            <SelectTrigger aria-label="Tipo">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -63,10 +63,13 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Fecha desde</div>
+          <label htmlFor="consolidado-fecha-desde" className="text-sm font-medium text-foreground">
+            Fecha desde
+          </label>
           <input
+            id="consolidado-fecha-desde"
             type="date"
-            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             value={filters.fechaDesde}
             onChange={(e) => setFechaDesde(e.target.value)}
             disabled={disabled}
@@ -74,10 +77,13 @@ export function ConsolidadoFilters({
         </div>
 
         <div className="space-y-2">
-          <div className="text-sm font-medium text-slate-700">Fecha hasta</div>
+          <label htmlFor="consolidado-fecha-hasta" className="text-sm font-medium text-foreground">
+            Fecha hasta
+          </label>
           <input
+            id="consolidado-fecha-hasta"
             type="date"
-            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             value={filters.fechaHasta}
             onChange={(e) => setFechaHasta(e.target.value)}
             disabled={disabled}

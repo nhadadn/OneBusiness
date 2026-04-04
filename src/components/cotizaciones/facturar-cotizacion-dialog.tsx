@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -29,10 +31,6 @@ type CategoriaListItem = {
   nombre: string;
 };
 
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
-
 function parseMoney(raw: string) {
   const num = Number(raw);
   return Number.isFinite(num) && !Number.isNaN(num) ? num : 0;
@@ -51,6 +49,7 @@ export function FacturarCotizacionDialog({
 }) {
   const { apiFetch } = useApiClient();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [numeroFactura, setNumeroFactura] = useState('');
   const [cuentaBancoId, setCuentaBancoId] = useState<string>('');
@@ -122,7 +121,7 @@ export function FacturarCotizacionDialog({
 
   const totalLabel = useMemo(() => {
     if (!cotizacion) return '';
-    return formatCurrencyMXN(parseMoney(cotizacion.total));
+    return formatCurrency(parseMoney(cotizacion.total));
   }, [cotizacion]);
 
   const confirmDisabled = useMemo(() => {
@@ -167,8 +166,9 @@ export function FacturarCotizacionDialog({
 
       onOpenChange(false);
       toast.success('Factura registrada. Se creó un movimiento de ingreso pendiente.');
-      window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-      window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+      void queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+      void queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+      void queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
       onSuccess();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo registrar la factura');
@@ -189,12 +189,12 @@ export function FacturarCotizacionDialog({
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Número de factura</label>
+            <label className="text-sm font-medium text-foreground">Número de factura</label>
             <Input value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} placeholder="F-001" disabled={!canFacturar || isSubmitting} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Cuenta bancaria destino</label>
+            <label className="text-sm font-medium text-foreground">Cuenta bancaria destino</label>
             <Select value={cuentaBancoId} onValueChange={(v) => setCuentaBancoId(v)} disabled={!canFacturar || isSubmitting || loadingOptions}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingOptions ? 'Cargando...' : 'Selecciona una cuenta'} />
@@ -210,7 +210,7 @@ export function FacturarCotizacionDialog({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-900">Categoría (opcional)</label>
+            <label className="text-sm font-medium text-foreground">Categoría (opcional)</label>
             <Select value={categoriaId} onValueChange={(v) => setCategoriaId(v)} disabled={isSubmitting || loadingOptions}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingOptions ? 'Cargando...' : 'Sin categoría'} />

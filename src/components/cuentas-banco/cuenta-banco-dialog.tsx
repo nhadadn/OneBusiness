@@ -30,7 +30,7 @@ export function CuentaBancoDialog({ open, onOpenChange, cuenta, negocioId }: Cue
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {cuenta && isLoading && <div className="text-sm text-slate-600">Cargando cuenta...</div>}
+        {cuenta && isLoading && <div className="text-sm text-muted-foreground">Cargando cuenta...</div>}
         {cuenta && error instanceof Error && <div className="text-sm text-red-600">{error.message}</div>}
 
         {!cuenta || detail ? (
@@ -40,4 +40,3 @@ export function CuentaBancoDialog({ open, onOpenChange, cuenta, negocioId }: Cue
     </Dialog>
   );
 }
-

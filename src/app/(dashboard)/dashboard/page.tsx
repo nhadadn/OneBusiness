@@ -2,26 +2,32 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Settings } from 'lucide-react';
+import { Building2, HelpCircle, Settings } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type Resolver } from 'react-hook-form';
 import { z } from 'zod';
 import { toast } from 'sonner';
 
+import { FeatureTour } from '@/components/shared';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { DashboardGlobalLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { SaldosBancoCard } from '@/components/dashboard/saldos-banco-card';
+import { dashboardTourSteps } from '@/lib/tours/dashboard-tour';
 
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useApiClient } from '@/hooks/use-api-client';
+import { useTour } from '@/hooks/use-tour';
 
 type PeriodKey = 'este_mes' | 'mes_anterior' | 'ultimos_3_meses' | 'este_ano';
 
@@ -101,40 +107,10 @@ function getPeriodRange(period: PeriodKey): { fechaDesde: string; fechaHasta: st
   return { fechaDesde: toISODate(new Date(now.getFullYear(), 0, 1)), fechaHasta: toISODate(now) };
 }
 
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(value);
-}
-
 function semaforoRank(value: Semaforo) {
   if (value === 'rojo') return 0;
   if (value === 'amarillo') return 1;
   return 2;
-}
-
-function useSelectedNegocioId() {
-  const [negocioId, setNegocioId] = React.useState<number | null>(null);
-
-  React.useEffect(() => {
-    const raw = localStorage.getItem('lastNegocioId');
-    const parsed = raw ? Number(raw) : Number.NaN;
-    if (Number.isFinite(parsed) && parsed > 0) {
-      setNegocioId(parsed);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    const handler = (event: Event) => {
-      const raw = (event as CustomEvent).detail as { negocioId?: unknown } | undefined;
-      const parsed = typeof raw?.negocioId === 'number' ? raw.negocioId : Number(raw?.negocioId);
-      if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) return;
-      setNegocioId(parsed);
-    };
-
-    window.addEventListener('onebusiness:negocio-changed', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:negocio-changed', handler as EventListener);
-  }, []);
-
-  return negocioId;
 }
 
 type UmbralesValues = {
@@ -213,16 +189,17 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
   const { apiFetch } = useApiClient();
-  const selectedNegocioId = useSelectedNegocioId();
+  const { negocioId: selectedNegocioId, setNegocioId } = useDashboardContext();
+  const dashboardTour = useTour('dashboard');
 
   const [period, setPeriod] = React.useState<PeriodKey>('este_mes');
   const [globalData, setGlobalData] = React.useState<DashboardResumenGlobalResponse['data'] | null>(null);
-  const [globalLoading, setGlobalLoading] = React.useState(false);
+  const [globalLoading, setGlobalLoading] = React.useState(true);
   const [globalError, setGlobalError] = React.useState<string | null>(null);
 
   const [operativoResumen, setOperativoResumen] = React.useState<ResumenNegocio | null>(null);
   const [operativoMovs, setOperativoMovs] = React.useState<MovimientosListItem[]>([]);
-  const [operativoLoading, setOperativoLoading] = React.useState(false);
+  const [operativoLoading, setOperativoLoading] = React.useState(true);
   const [operativoError, setOperativoError] = React.useState<string | null>(null);
 
   const [umbralesDialog, setUmbralesDialog] = React.useState<{ open: boolean; negocio: ResumenNegocio | null }>({
@@ -334,7 +311,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto space-y-6 py-6">
-        <DashboardGlobalLoader />
+        <LoadingSkeleton variant="card" rows={4} />
       </div>
     );
   }
@@ -345,7 +322,7 @@ export default function DashboardPage() {
     return (
       <div className="container mx-auto space-y-6 py-6">
         <EmptyState
-          icon={Building2}
+          icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
           title="Sin negocios asignados"
           description="No tienes negocios asignados. Contacta a un administrador para que te asigne acceso."
         />
@@ -357,7 +334,7 @@ export default function DashboardPage() {
     if (globalLoading) {
       return (
         <div className="container mx-auto space-y-6 py-6">
-          <DashboardGlobalLoader />
+          <LoadingSkeleton variant="card" rows={4} />
         </div>
       );
     }
@@ -377,29 +354,42 @@ export default function DashboardPage() {
     });
 
     return (
-      <div className="container mx-auto space-y-6 py-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-slate-600">
-            Bienvenido, {user.nombre} ({user.rol})
-          </p>
-        </div>
+      <>
+        {dashboardTour.shouldShowTour ? (
+          <FeatureTour tourId="dashboard" steps={dashboardTourSteps} onComplete={dashboardTour.markTourCompleted} />
+        ) : null}
+        <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
+          <PageHeader
+            title="Dashboard"
+            description={`Bienvenido, ${user.nombre} (${user.rol})`}
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={dashboardTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            }
+          />
 
-        <section className="space-y-3">
+        <section className="space-y-3" data-tour="dashboard-pending">
           <div className="text-sm font-semibold text-foreground">Semáforo de negocios</div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((n) => {
               const pending = n.cantidadPendientes ?? 0;
               const pendingLabel = pending === 1 ? 'pendiente' : 'pendientes';
-              const balanceLabel = formatCurrencyMXN(n.balance);
+              const balanceLabel = formatCurrency(n.balance);
 
               return (
                 <Card
                   key={n.negocioId}
                   className="cursor-pointer border-border bg-card shadow-none transition-colors hover:bg-accent"
                   onClick={() => {
-                    localStorage.setItem('lastNegocioId', String(n.negocioId));
-                    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: n.negocioId } }));
+                    setNegocioId(n.negocioId);
                     router.push('/movimientos');
                   }}
                 >
@@ -451,22 +441,22 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-4" data-tour="dashboard-summary">
           <div className="text-sm font-semibold text-foreground">Resumen financiero consolidado</div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <MetricCard
               title="Total ingresos"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.totalIngresos ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.totalIngresos ?? 0)}
               valueClassName="text-emerald-600"
             />
             <MetricCard
               title="Total egresos"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.totalEgresos ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.totalEgresos ?? 0)}
               valueClassName="text-destructive"
             />
             <MetricCard
               title="Balance neto"
-              value={formatCurrencyMXN(globalData?.totalesGlobales.balance ?? 0)}
+              value={formatCurrency(globalData?.totalesGlobales.balance ?? 0)}
               valueClassName={(globalData?.totalesGlobales.balance ?? 0) < 0 ? 'text-destructive' : 'text-emerald-600'}
             />
           </div>
@@ -590,7 +580,8 @@ export default function DashboardPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -599,7 +590,7 @@ export default function DashboardPage() {
       return (
         <div className="container mx-auto space-y-6 py-6">
           <EmptyState
-            icon={Building2}
+            icon={<Building2 className="h-12 w-12 text-muted-foreground" />}
             title="Selecciona un negocio"
             description="Selecciona un negocio en el header para ver el resumen."
           />
@@ -610,7 +601,7 @@ export default function DashboardPage() {
     if (operativoLoading) {
       return (
         <div className="container mx-auto space-y-6 py-6">
-          <DashboardGlobalLoader />
+          <LoadingSkeleton variant="card" rows={4} />
         </div>
       );
     }
@@ -627,19 +618,35 @@ export default function DashboardPage() {
     const pendientes = operativoResumen?.cantidadPendientes ?? 0;
 
     return (
-      <div className="container mx-auto space-y-6 py-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-slate-600">
-            Bienvenido, {user.nombre} ({user.rol})
-          </p>
-        </div>
+      <>
+        {dashboardTour.shouldShowTour ? (
+          <FeatureTour tourId="dashboard" steps={dashboardTourSteps} onComplete={dashboardTour.markTourCompleted} />
+        ) : null}
+        <div className="container mx-auto space-y-6 py-6" data-tour="dashboard-welcome">
+          <PageHeader
+            title="Dashboard"
+            description={`Bienvenido, ${user.nombre} (${user.rol})`}
+            action={
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0"
+                aria-label="Ver guía de la página"
+                onClick={dashboardTour.resetTour}
+              >
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            }
+          />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <MetricCard title="Pendientes" value={`${pendientes}`} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3" data-tour="dashboard-summary">
+          <div data-tour="dashboard-pending">
+            <MetricCard title="Pendientes" value={`${pendientes}`} />
+          </div>
           <MetricCard
             title="Balance (período)"
-            value={formatCurrencyMXN(balance)}
+            value={formatCurrency(balance)}
             valueClassName={balance < 0 ? 'text-destructive' : 'text-emerald-600'}
           />
           <MetricCard title="Movimientos recientes" value={`${operativoMovs.length}`} />
@@ -671,7 +678,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {operativoMovs.map((m) => {
-                  const monto = formatCurrencyMXN(Number(m.monto) || 0);
+                  const monto = formatCurrency(Number(m.monto) || 0);
                   return (
                     <div key={m.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
                       <div className="min-w-0">
@@ -688,7 +695,8 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </>
     );
   }
 

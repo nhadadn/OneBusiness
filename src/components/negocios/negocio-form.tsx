@@ -233,11 +233,11 @@ export function NegocioForm({ negocio, onSuccess }: NegocioFormProps) {
             <FormItem>
               <FormLabel>Tiene socios</FormLabel>
               <FormControl>
-                <div className="flex items-start gap-3 rounded-md border border-slate-200 p-3">
+                <div className="flex items-start gap-3 rounded-md border border-border p-3">
                   <Checkbox checked={Boolean(field.value)} onCheckedChange={(v) => field.onChange(v === true)} disabled={isSubmitting} />
                   <div className="space-y-1">
-                    <div className="text-sm font-medium text-slate-900">Este negocio tiene socios</div>
-                    <div className="text-xs text-slate-600">Activa lógica relacionada a socios en algunos módulos.</div>
+                    <div className="text-sm font-medium text-foreground">Este negocio tiene socios</div>
+                    <div className="text-xs text-muted-foreground">Activa lógica relacionada a socios en algunos módulos.</div>
                   </div>
                 </div>
               </FormControl>
@@ -278,7 +278,7 @@ export function NegocioForm({ negocio, onSuccess }: NegocioFormProps) {
 
         <div className="flex justify-end gap-2">
           <Button type="submit" disabled={isSubmitting}>
-            {isEditing ? 'Guardar cambios' : 'Crear negocio'}
+            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Crear negocio'}
           </Button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Loader2, TriangleAlert, Upload, X, XCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -104,6 +105,7 @@ export default function ImportarMovimientosPage() {
   const router = useRouter();
   const { user, isLoading, accessToken, refreshSession, logout } = useAuth();
   const { apiFetch } = useApiClient();
+  const queryClient = useQueryClient();
 
   const [phase, setPhase] = React.useState<Phase>('subir');
 
@@ -312,8 +314,9 @@ export default function ImportarMovimientosPage() {
 
       if (res.ok) {
         const data = (await res.json()) as { success: boolean; data: { total: number; creados: number } };
-        window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
-        window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
+        void queryClient.invalidateQueries({ queryKey: ['movimientos'] });
+        void queryClient.invalidateQueries({ queryKey: ['movimientos-pendientes'] });
+        void queryClient.invalidateQueries({ queryKey: ['pendingCount'] });
         setResult({ kind: 'success', total: data.data.total, creados: data.data.creados });
         setPhase('resultado');
         return;
@@ -337,7 +340,7 @@ export default function ImportarMovimientosPage() {
     } finally {
       setImporting(false);
     }
-  }, [file, mapServerErrorsToRows, uploadWithAuth]);
+  }, [file, mapServerErrorsToRows, queryClient, uploadWithAuth]);
 
   const handleSelectFile = React.useCallback((next: File | null) => {
     setFileError(null);
@@ -449,14 +452,14 @@ export default function ImportarMovimientosPage() {
                 }}
                 onDrop={onDrop}
                 className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center ${
-                  dragActive ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white'
+                  dragActive ? 'border-border bg-muted' : 'border-border bg-background'
                 }`}
                 aria-label="Zona para subir archivo Excel"
               >
-                <FileSpreadsheet className="h-10 w-10 text-slate-500" aria-hidden="true" />
-                <div className="text-sm font-medium text-slate-900">Arrastra tu archivo aquí</div>
-                <div className="text-sm text-slate-600">o haz clic para seleccionar</div>
-                <div className="text-xs text-slate-500">.xlsx o .xls</div>
+                <FileSpreadsheet className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+                <div className="text-sm font-medium text-foreground">Arrastra tu archivo aquí</div>
+                <div className="text-sm text-muted-foreground">o haz clic para seleccionar</div>
+                <div className="text-xs text-muted-foreground">.xlsx o .xls</div>
               </div>
 
               <input
@@ -471,10 +474,10 @@ export default function ImportarMovimientosPage() {
               {fileError ? <div className="text-sm text-red-600">{fileError}</div> : null}
 
               {file ? (
-                <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-3 py-2">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-slate-900">{file.name}</div>
-                    <div className="text-xs text-slate-600">{formatBytes(file.size)}</div>
+                    <div className="truncate text-sm font-medium text-foreground">{file.name}</div>
+                    <div className="text-xs text-muted-foreground">{formatBytes(file.size)}</div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => handleSelectFile(null)} aria-label="Quitar archivo">
                     <X className="h-4 w-4" />
@@ -508,7 +511,11 @@ export default function ImportarMovimientosPage() {
           ) : null}
 
           {summary.total === 0 ? (
-            <EmptyState icon={FileSpreadsheet} title="Sin filas para previsualizar" description="El archivo no tiene datos en la hoja Movimientos." />
+            <EmptyState
+              icon={<FileSpreadsheet className="h-12 w-12 text-muted-foreground" />}
+              title="Sin filas para previsualizar"
+              description="El archivo no tiene datos en la hoja Movimientos."
+            />
           ) : (
             <div
               className={`rounded-lg border px-4 py-3 text-sm ${
@@ -529,20 +536,20 @@ export default function ImportarMovimientosPage() {
             </div>
           )}
 
-          <div className="rounded-lg border border-slate-200 bg-white">
+          <div className="rounded-lg border border-border bg-card">
             <div className="max-h-[520px] overflow-auto">
               <table className="w-full text-sm">
                 <thead className="border-b">
                   <tr className="bg-slate-50">
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Fila</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Fecha</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Tipo</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Concepto</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Monto</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Negocio</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Cuenta</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Tercero</th>
-                    <th className="h-12 px-4 text-left font-medium text-slate-600">Estado</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Fila</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Fecha</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Tipo</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Concepto</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Monto</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Negocio</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Cuenta</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Tercero</th>
+                    <th className="h-12 px-4 text-left font-medium text-muted-foreground">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -551,7 +558,7 @@ export default function ImportarMovimientosPage() {
                     const montoLabel = Number.isFinite(montoNum) ? formatNumberMX(montoNum) : row.monto;
                     return (
                       <tr key={row.excelRow} className={`border-b last:border-b-0 ${row.isValid ? 'hover:bg-slate-50/50' : 'bg-red-50 hover:bg-red-50'}`}>
-                        <td className="px-4 py-3 align-top font-mono text-xs text-slate-700">{row.excelRow}</td>
+                        <td className="px-4 py-3 align-top font-mono text-xs text-foreground">{row.excelRow}</td>
 
                         {(
                           [
@@ -576,13 +583,13 @@ export default function ImportarMovimientosPage() {
                                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                       : row.tipo === 'EGRESO'
                                         ? 'border-red-200 bg-red-50 text-red-700'
-                                        : 'border-slate-200 bg-white text-slate-700'
+                                        : 'border-border bg-card text-foreground'
                                   }
                                 >
                                   {value || '—'}
                                 </Badge>
                               ) : (
-                                <div className="text-slate-900">{value || '—'}</div>
+                                <div className="text-foreground">{value || '—'}</div>
                               )}
 
                               {errs.length > 0 ? (
@@ -650,7 +657,7 @@ export default function ImportarMovimientosPage() {
         result.kind === 'success' ? (
           <div className="mx-auto w-full max-w-2xl">
             <EmptyState
-              icon={CheckCircle2}
+              icon={<CheckCircle2 className="h-12 w-12 text-muted-foreground" />}
               title="Importación completada"
               description={`Se crearon ${result.creados} movimientos exitosamente. Todos están en estado Pendiente de aprobación.`}
               className="py-10"
@@ -658,7 +665,6 @@ export default function ImportarMovimientosPage() {
             <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Button
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('onebusiness:movimientos-refresh'));
                   router.push('/movimientos');
                 }}
               >

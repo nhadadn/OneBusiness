@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { ArrowLeftRight, Plus } from 'lucide-react';
+import { ArrowLeftRight, Menu, Plus } from 'lucide-react';
+import { MobileNav } from '@/components/layout/mobile-nav';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -57,6 +58,7 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
   const { user } = useAuth();
 
   const [negocios, setNegocios] = React.useState<NegocioListItem[]>([]);
+  const [isMobileNavOpen, setIsMobileNavOpen] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -92,16 +94,21 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
     if (negocioId !== nextId) {
       onNegocioChange(nextId);
     }
-
-    localStorage.setItem('lastNegocioId', String(nextId));
-    window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
   }, [negocios, negocioId, onNegocioChange]);
 
   const showNewMovimiento = pathname === '/dashboard' || pathname === '/movimientos';
   const canWrite = user?.rol !== 'Externo';
 
   return (
-    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-6">
+    <header className="flex h-14 items-center gap-4 border-b border-border bg-card px-3 sm:px-6">
+      <button
+        type="button"
+        className="flex h-11 w-11 items-center justify-center rounded-md text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
+        aria-label="Abrir menú"
+        onClick={() => setIsMobileNavOpen(true)}
+      >
+        <Menu className="h-5 w-5" aria-hidden="true" />
+      </button>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold">{getPageTitle(pathname)}</div>
       </div>
@@ -114,8 +121,6 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
               const nextId = Number(value);
               if (!Number.isFinite(nextId)) return;
               onNegocioChange(nextId);
-              localStorage.setItem('lastNegocioId', String(nextId));
-              window.dispatchEvent(new CustomEvent('onebusiness:negocio-changed', { detail: { negocioId: nextId } }));
             }}
           >
             <SelectTrigger className="bg-background border-border">
@@ -141,16 +146,16 @@ export function Header({ negocioId, onNegocioChange, onNewMovimiento, onNewTrasp
           </Button>
 
           <Button
-            variant="ghost"
+            variant="default"
             onClick={onNewMovimiento}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
           >
             <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Nuevo movimiento</span>
-            <span className="sm:hidden">Nuevo</span>
+            <span className="sm:hidden">Movimiento</span>
           </Button>
         </div>
       ) : null}
+      <MobileNav open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen} />
     </header>
   );
 }

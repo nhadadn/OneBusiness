@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { EstadoCotizacion } from '@/types/cotizacion.types';
@@ -39,10 +40,6 @@ function formatDateDMY(value: string) {
 function parseMoney(raw: string) {
   const num = Number(raw);
   return Number.isFinite(num) && !Number.isNaN(num) ? num : 0;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 type PeriodPreset = 'all' | 'this_month' | 'last_month' | 'last_3_months' | 'this_year';
@@ -111,13 +108,21 @@ function CotizacionesTableSkeleton({ rows }: { rows: number }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[120px]">Folio</TableHead>
-            <TableHead className="w-[100px]">Fecha</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Concepto</TableHead>
-            <TableHead className="w-[110px] text-right">Total</TableHead>
-            <TableHead className="w-[110px]">Estado</TableHead>
-            <TableHead className="w-[80px]" />
+            <TableHead scope="col" className="w-[120px]">
+              Folio
+            </TableHead>
+            <TableHead scope="col" className="w-[100px]">
+              Fecha
+            </TableHead>
+            <TableHead scope="col">Cliente</TableHead>
+            <TableHead scope="col">Concepto</TableHead>
+            <TableHead scope="col" className="w-[110px] text-right">
+              Total
+            </TableHead>
+            <TableHead scope="col" className="w-[110px]">
+              Estado
+            </TableHead>
+            <TableHead scope="col" className="w-[80px]" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -392,7 +397,7 @@ export default function CotizacionesPage() {
         <ErrorState message={error} onRetry={() => fetchCotizaciones()} />
       ) : items.length === 0 ? (
         <EmptyState
-          icon={Send}
+          icon={<Send className="h-12 w-12 text-muted-foreground" />}
           title="No hay cotizaciones"
           description="No hay cotizaciones con los filtros actuales."
           action={{ label: 'Crear primera cotización', onClick: () => router.push('/cotizaciones/nueva') }}
@@ -402,18 +407,28 @@ export default function CotizacionesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">Folio</TableHead>
-                <TableHead className="w-[100px]">Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Concepto</TableHead>
-                <TableHead className="w-[110px] text-right">Total</TableHead>
-                <TableHead className="w-[110px]">Estado</TableHead>
-                <TableHead className="w-[80px] text-right">Acciones</TableHead>
+                <TableHead scope="col" className="w-[120px]">
+                  Folio
+                </TableHead>
+                <TableHead scope="col" className="w-[100px]">
+                  Fecha
+                </TableHead>
+                <TableHead scope="col">Cliente</TableHead>
+                <TableHead scope="col">Concepto</TableHead>
+                <TableHead scope="col" className="w-[110px] text-right">
+                  Total
+                </TableHead>
+                <TableHead scope="col" className="w-[110px]">
+                  Estado
+                </TableHead>
+                <TableHead scope="col" className="w-[80px] text-right">
+                  Acciones
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((row) => {
-                const totalLabel = formatCurrencyMXN(parseMoney(row.total));
+                const totalLabel = formatCurrency(parseMoney(row.total));
                 return (
                   <TableRow
                     key={row.id}
@@ -445,10 +460,10 @@ export default function CotizacionesPage() {
                           <DropdownMenu.Content
                             align="end"
                             sideOffset={6}
-                            className="z-50 min-w-[200px] rounded-md border border-slate-200 bg-white p-1 shadow-md"
+                            className="z-50 min-w-[200px] rounded-md border border-border bg-popover p-1 shadow-md"
                           >
                             <DropdownMenu.Item
-                              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                              className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                               onSelect={() => router.push(`/cotizaciones/${row.id}`)}
                             >
                               <Eye className="h-4 w-4" />
@@ -457,7 +472,7 @@ export default function CotizacionesPage() {
 
                             {(row.estado === 'BORRADOR' || row.estado === 'ENVIADA') && canEdit ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => router.push(`/cotizaciones/${row.id}/editar`)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -467,7 +482,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'FACTURADA' && row.movimientoId ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => router.push(`/movimientos/${row.movimientoId}`)}
                               >
                                 <Eye className="h-4 w-4" />
@@ -479,7 +494,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'BORRADOR' ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('enviar');
@@ -492,7 +507,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'ENVIADA' && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('aprobar');
@@ -505,7 +520,7 @@ export default function CotizacionesPage() {
 
                             {row.estado === 'APROBADA' && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('facturar');
@@ -518,7 +533,7 @@ export default function CotizacionesPage() {
 
                             {(row.estado === 'ENVIADA' || row.estado === 'APROBADA') && canManage ? (
                               <DropdownMenu.Item
-                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                                className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                                 onSelect={() => {
                                   setSelected(row);
                                   setDialog('cancelar');

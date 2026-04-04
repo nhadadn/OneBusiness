@@ -1,4 +1,4 @@
-﻿'use client';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿'use client';
 
 import { Badge } from '@/components/ui/badge';
 import type { EstadoMovimiento } from '@/types/movimiento.types';
@@ -18,7 +18,7 @@ export function EstadoBadge({ estado }: EstadoBadgeProps) {
     return <Badge className="border-red-200 bg-red-50 text-red-700">Rechazado</Badge>;
   }
   if (estado === 'CANCELADO') {
-    return <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700">Cancelado</Badge>;
+    return <Badge variant="outline" className="border-border bg-muted text-foreground">Cancelado</Badge>;
   }
   return (
     <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">

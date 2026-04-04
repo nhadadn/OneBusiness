@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatCurrency } from '@/lib/format';
 import { useApiClient } from '@/hooks/use-api-client';
 import { useAuth } from '@/hooks/use-auth';
 import type { Categoria } from '@/types/categoria.types';
@@ -99,10 +100,6 @@ function round2(value: number) {
 function parseMoney(raw: unknown) {
   const num = typeof raw === 'number' ? raw : Number(raw);
   return Number.isFinite(num) && !Number.isNaN(num) ? num : 0;
-}
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 }
 
 function formatDateDMY(value: string) {
@@ -332,7 +329,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
     return (
       <div className="container mx-auto space-y-6 py-6">
         <EmptyState
-          icon={Send}
+          icon={<Send className="h-12 w-12 text-muted-foreground" />}
           title="Cotización no encontrada"
           description="La cotización no existe o fue eliminada."
           action={{ label: 'Volver a cotizaciones', onClick: () => router.push('/cotizaciones') }}
@@ -403,11 +400,11 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
               <DropdownMenu.Content
                 align="end"
                 sideOffset={6}
-                className="z-50 min-w-[220px] rounded-md border border-slate-200 bg-white p-1 shadow-md"
+                className="z-50 min-w-[220px] rounded-md border border-border bg-popover p-1 shadow-md"
               >
                 {actionItems.canEnviar ? (
                   <DropdownMenu.Item
-                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                     onSelect={() => setDialog('enviar')}
                   >
                     <Send className="h-4 w-4" />
@@ -417,7 +414,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
 
                 {actionItems.canAprobar ? (
                   <DropdownMenu.Item
-                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                     onSelect={() => setDialog('aprobar')}
                   >
                     <Send className="h-4 w-4" />
@@ -427,7 +424,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
 
                 {actionItems.canFacturar ? (
                   <DropdownMenu.Item
-                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                    className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                     onSelect={() => setDialog('facturar')}
                   >
                     <Send className="h-4 w-4" />
@@ -439,7 +436,7 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                   <>
                     <div className="my-1 h-px bg-slate-200" />
                     <DropdownMenu.Item
-                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-slate-900 outline-none hover:bg-slate-100"
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm text-foreground outline-none hover:bg-slate-100"
                       onSelect={() => setDialog('cancelar')}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -492,12 +489,22 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[48px]">#</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead className="w-[80px]">UM</TableHead>
-                        <TableHead className="w-[90px] text-right">Cant</TableHead>
-                        <TableHead className="w-[120px] text-right">Precio Unit.</TableHead>
-                        <TableHead className="w-[120px] text-right">Importe</TableHead>
+                        <TableHead scope="col" className="w-[48px]">
+                          #
+                        </TableHead>
+                        <TableHead scope="col">Descripción</TableHead>
+                        <TableHead scope="col" className="w-[80px]">
+                          UM
+                        </TableHead>
+                        <TableHead scope="col" className="w-[90px] text-right">
+                          Cant
+                        </TableHead>
+                        <TableHead scope="col" className="w-[120px] text-right">
+                          Precio Unit.
+                        </TableHead>
+                        <TableHead scope="col" className="w-[120px] text-right">
+                          Importe
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -510,9 +517,9 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                           <TableCell className="text-sm text-muted-foreground">{item.unidadMedida?.trim() ? item.unidadMedida : '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm">{item.cantidad ? parseMoney(item.cantidad).toString() : '—'}</TableCell>
                           <TableCell className="text-right font-mono text-sm">
-                            {item.precioUnitario ? formatCurrencyMXN(parseMoney(item.precioUnitario)) : '—'}
+                            {item.precioUnitario ? formatCurrency(parseMoney(item.precioUnitario)) : '—'}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">{formatCurrencyMXN(parseMoney(item.importe))}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{formatCurrency(parseMoney(item.importe))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -522,15 +529,15 @@ export default function CotizacionDetallePage({ params }: { params: { id: string
                 <div className="space-y-1 text-right text-sm">
                   <div className="flex justify-end gap-3">
                     <div className="text-muted-foreground">Subtotal:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.subtotal)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.subtotal)}</div>
                   </div>
                   <div className="flex justify-end gap-3">
                     <div className="text-muted-foreground">IVA 16%:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.iva)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.iva)}</div>
                   </div>
                   <div className="flex justify-end gap-3 font-semibold">
                     <div>Total:</div>
-                    <div className="w-[140px] font-mono">{formatCurrencyMXN(totals.total)}</div>
+                    <div className="w-[140px] font-mono">{formatCurrency(totals.total)}</div>
                   </div>
                 </div>
               </div>

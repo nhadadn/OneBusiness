@@ -1,15 +1,14 @@
-﻿'use client';
+'use client';
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, ClipboardList, Eye, Loader2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { EstadoBadge } from '@/components/movimientos/estado-badge';
 import { RechazoDialog } from '@/components/movimientos/rechazo-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
-import { MovimientosLoader } from '@/components/shared/page-loader';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -22,6 +21,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatCurrency } from '@/lib/format';
+import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
 import { useAprobarMovimiento, useDeleteMovimiento, useMovimientos, useRechazarMovimiento, type MovimientosFilters } from '@/hooks/use-movimientos';
 import type { MovimientoListItem } from '@/hooks/use-movimientos';
@@ -33,10 +34,6 @@ export type MovimientosTableProps = {
   onAprobar?: (id: number) => void;
   onRechazar?: (id: number) => void;
 };
-
-function formatCurrencyMXN(value: number) {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-}
 
 function formatDateDMY(value: string) {
   const [y, m, d] = value.split('-');
@@ -60,13 +57,22 @@ function getTraspasoBadge(traspasoId: number) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Badge className="border-slate-200 bg-white text-slate-700">Traspaso</Badge>
+            <Badge className="border-border bg-card text-foreground">Traspaso</Badge>
           </span>
         </TooltipTrigger>
         <TooltipContent>Traspaso vinculado con movimiento #{traspasoId}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
+}
+
+function getEstadoBadge(estado: EstadoMovimiento) {
+  if (estado === 'PENDIENTE') return <Badge variant="pendiente">Pendiente</Badge>;
+  if (estado === 'APROBADO') return <Badge variant="aprobado">Aprobado</Badge>;
+  if (estado === 'PAGADO') return <Badge variant="pagado">Pagado</Badge>;
+  if (estado === 'RECHAZADO') return <Badge variant="rechazado">Rechazado</Badge>;
+  if (estado === 'CANCELADO') return <Badge variant="cancelado">Cancelado</Badge>;
+  return <Badge variant="outline">{estado}</Badge>;
 }
 
 function parseMoney(raw: string) {
@@ -122,7 +128,6 @@ export function useMovimientoInlineModeration({
         [mov.id]: 'APROBADO',
         ...(typeof mov.traspasoRefId === 'number' ? { [mov.traspasoRefId]: 'APROBADO' } : {}),
       }));
-      window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
       if (typeof mov.traspasoRefId === 'number') {
         toast.success('Traspaso aprobado — 2 movimientos actualizados', { duration: 2500 });
       } else {
@@ -175,7 +180,6 @@ export function useMovimientoInlineModeration({
               [id]: 'RECHAZADO',
               ...(typeof rechazoTarget.traspasoRefId === 'number' ? { [rechazoTarget.traspasoRefId]: 'RECHAZADO' } : {}),
             }));
-            window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
             if (typeof rechazoTarget.traspasoRefId === 'number') {
               toast.success('Traspaso rechazado — 2 movimientos actualizados', { duration: 2500 });
             } else {
@@ -218,7 +222,6 @@ export function useMovimientoInlineModeration({
                 try {
                   await eliminar.mutateAsync({ id, negocioId });
                   setEliminarOpen(false);
-                  window.dispatchEvent(new CustomEvent('onebusiness:pending-count-refresh'));
                   toast.success('Movimiento eliminado', { duration: 2500 });
                 } catch (e) {
                   setActionError((prev) => ({
@@ -266,6 +269,7 @@ function getVisiblePages(page: number, totalPages: number) {
 export function MovimientosTable({ filters, search, onAprobar, onRechazar }: MovimientosTableProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { openNewMovimiento } = useDashboardContext();
   const canManage = user?.rol === 'Dueño' || user?.rol === 'Admin';
   const negocioId = filters.negocioId;
 
@@ -317,21 +321,13 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   }, [items]);
 
   React.useEffect(() => {
-    const handler = () => {
-      query.refetch();
-    };
-    window.addEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-    return () => window.removeEventListener('onebusiness:movimientos-refresh', handler as EventListener);
-  }, [query]);
-
-  React.useEffect(() => {
     query.refetch();
   }, [query, search]);
 
   if (typeof negocioId !== 'number') {
     return (
       <EmptyState
-        icon={ClipboardList}
+        icon={<ClipboardList className="h-12 w-12 text-muted-foreground" />}
         title="Sin negocio seleccionado"
         description="Selecciona un negocio para ver movimientos."
       />
@@ -339,7 +335,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   }
 
   if (query.isLoading) {
-    return <MovimientosLoader />;
+    return <LoadingSkeleton variant="table" rows={5} />;
   }
 
   if (query.error instanceof Error) {
@@ -349,63 +345,77 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
   if (items.length === 0) {
     return (
       <EmptyState
-        icon={ClipboardList}
+        icon={<ClipboardList className="h-12 w-12 text-muted-foreground" />}
         title="Sin movimientos"
         description="Crea el primer movimiento para empezar a registrar las finanzas de este negocio."
         action={{
           label: 'Nuevo movimiento',
-          onClick: () => window.dispatchEvent(new CustomEvent('onebusiness:new-movimiento-open')),
+          onClick: openNewMovimiento,
         }}
       />
     );
   }
+
+  let approveTourAssigned = false;
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Total ingresos</div>
-          <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrencyMXN(resumen.ingresos)}</div>
+          <div className="mt-1 font-mono text-base text-emerald-700">{formatCurrency(resumen.ingresos)}</div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Total egresos</div>
-          <div className="mt-1 font-mono text-base text-red-700">{formatCurrencyMXN(resumen.egresos)}</div>
+          <div className="mt-1 font-mono text-base text-red-700">{formatCurrency(resumen.egresos)}</div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-xs text-muted-foreground">Balance</div>
-          <div className="mt-1 font-mono text-base">{formatCurrencyMXN(resumen.balance)}</div>
+          <div className="mt-1 font-mono text-base">{formatCurrency(resumen.balance)}</div>
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-md border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Concepto</TableHead>
-              <TableHead>Categoría</TableHead>
-              <TableHead>Cuenta bancaria</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[220px]">Acciones</TableHead>
+              <TableHead scope="col">Fecha</TableHead>
+              <TableHead scope="col">Concepto</TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Categoría
+              </TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Cuenta bancaria
+              </TableHead>
+              <TableHead scope="col" className="hidden sm:table-cell">
+                Tipo
+              </TableHead>
+              <TableHead scope="col" className="text-right">
+                Monto
+              </TableHead>
+              <TableHead scope="col">Estado</TableHead>
+              <TableHead scope="col" className="w-[80px] px-2 sm:px-4">
+                Acciones
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((mov) => {
-              const monto = formatCurrencyMXN(parseMoney(mov.monto));
+              const monto = formatCurrency(parseMoney(mov.monto));
               const canApproveReject = canManage && mov.estado === 'PENDIENTE';
               const isApproving = moderation.action?.type === 'aprobar' && moderation.action.id === mov.id;
               const isRejecting = moderation.action?.type === 'rechazar' && moderation.action.id === mov.id;
               const isDeleting = moderation.action?.type === 'eliminar' && moderation.action.id === mov.id;
               const error = moderation.actionError[mov.id];
+              const addApproveTourAttr = canApproveReject && !approveTourAssigned;
+              if (addApproveTourAttr) approveTourAssigned = true;
               return (
                 <TableRow key={mov.id}>
                   <TableCell className="whitespace-nowrap">{formatDateDMY(mov.fecha)}</TableCell>
                   <TableCell className="font-medium">{mov.concepto}</TableCell>
-                  <TableCell className="text-slate-700">{mov.tercero ?? '—'}</TableCell>
-                  <TableCell className="text-slate-700">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell text-foreground">{mov.tercero ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-foreground">{mov.cuentaBanco?.nombre ?? '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <div className="flex flex-wrap items-center gap-2">
                       {getTipoBadge(mov.tipo)}
                       {typeof mov.traspasoRefId === 'number' ? getTraspasoBadge(mov.traspasoRefId) : null}
@@ -413,9 +423,9 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                   </TableCell>
                   <TableCell className="text-right font-mono">{monto}</TableCell>
                   <TableCell>
-                    <EstadoBadge estado={mov.estado} />
+                    {getEstadoBadge(mov.estado)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-2 sm:px-4">
                     <div className="flex items-center gap-2">
                       {canApproveReject && (
                         <Button
@@ -424,6 +434,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                           onClick={() => moderation.handleApprove(mov)}
                           disabled={isApproving || isRejecting || isDeleting}
                           aria-label="Aprobar"
+                          data-tour={addApproveTourAttr ? 'movimientos-approve' : undefined}
                           className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
@@ -441,7 +452,12 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                           <X className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => router.push(`/movimientos/${mov.id}`)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/movimientos/${mov.id}`)}
+                        aria-label="Ver detalle del movimiento"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canManage && (
@@ -467,7 +483,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           {total > 0 ? `Mostrando ${(page - 1) * limit + 1}-${Math.min(page * limit, total)} de ${total} movimientos` : 'Mostrando 0 movimientos'}
         </div>
 
@@ -485,7 +501,7 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
           </Button>
         </div>
 
-        <div className="text-sm text-slate-600">{`Página ${page} de ${totalPages}`}</div>
+        <div className="text-sm text-muted-foreground">{`Página ${page} de ${totalPages}`}</div>
       </div>
 
       {moderation.dialogs}

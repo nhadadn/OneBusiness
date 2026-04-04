@@ -63,7 +63,7 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
   if (usuarios.length === 0) {
     return (
       <EmptyState
-        icon={UserRound}
+        icon={<UserRound className="h-12 w-12 text-muted-foreground" />}
         title="Sin usuarios"
         description="Agrega el primer usuario para este negocio."
         action={canEdit && onCreate ? { label: 'Nuevo usuario', onClick: onCreate } : undefined}
@@ -72,16 +72,20 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nombre</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Rol</TableHead>
-            <TableHead>Negocios</TableHead>
-            <TableHead>Estado</TableHead>
-            {canEdit && <TableHead className="w-[120px]">Acciones</TableHead>}
+            <TableHead scope="col">Nombre</TableHead>
+            <TableHead scope="col">Email</TableHead>
+            <TableHead scope="col">Rol</TableHead>
+            <TableHead scope="col">Negocios</TableHead>
+            <TableHead scope="col">Estado</TableHead>
+            {canEdit && (
+              <TableHead scope="col" className="w-[120px]">
+                Acciones
+              </TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -101,7 +105,7 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
               {canEdit && (
                 <TableCell>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => onEdit(usuario)}>
+                    <Button size="sm" variant="ghost" onClick={() => onEdit(usuario)} aria-label="Editar usuario">
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
@@ -109,6 +113,7 @@ export function UsuariosTable({ negocioId, onEdit, onCreate }: UsuariosTableProp
                       variant="ghost"
                       onClick={() => handleToggleActivo(usuario)}
                       disabled={updateUsuario.isPending}
+                      aria-label={usuario.activo ? 'Desactivar usuario' : 'Activar usuario'}
                     >
                       {updateUsuario.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
