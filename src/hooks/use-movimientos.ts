@@ -83,6 +83,7 @@ export type MovimientosFilters = {
   fechaDesde?: string;
   fechaHasta?: string;
   cuentaBancoId?: number;
+  centroCostoId?: number | null;
   page?: number;
   limit?: number;
 };
@@ -200,7 +201,7 @@ export function useMovimientos(filters: MovimientosFilters) {
   const { apiFetch } = useApiClient();
 
   return useQuery({
-    queryKey: ['movimientos', filters],
+    queryKey: ['movimientos', filters, filters.centroCostoId ?? null],
     enabled: typeof filters.negocioId === 'number',
     queryFn: async (): Promise<PaginatedResult<MovimientoListItem>> => {
       const searchParams = new URLSearchParams();
@@ -210,6 +211,7 @@ export function useMovimientos(filters: MovimientosFilters) {
       if (filters.fechaDesde) searchParams.set('fechaDesde', filters.fechaDesde);
       if (filters.fechaHasta) searchParams.set('fechaHasta', filters.fechaHasta);
       if (typeof filters.cuentaBancoId === 'number') searchParams.set('cuentaBancoId', String(filters.cuentaBancoId));
+      if (typeof filters.centroCostoId === 'number') searchParams.set('centroCostoId', String(filters.centroCostoId));
       if (typeof filters.page === 'number') searchParams.set('page', String(filters.page));
       if (typeof filters.limit === 'number') searchParams.set('limit', String(filters.limit));
 

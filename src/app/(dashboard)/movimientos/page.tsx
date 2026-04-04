@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleCheck, HelpCircle, Loader2, Search, Upload, X } from 'lucide-react';
 
@@ -18,6 +18,7 @@ import { formatCurrency } from '@/lib/format';
 import { movimientosTourSteps } from '@/lib/tours/movimientos-tour';
 import { useDashboardContext } from '@/app/(dashboard)/providers';
 import { useAuth } from '@/hooks/use-auth';
+import { useCentrosCosto } from '@/hooks/use-centros-costo';
 import { useMovimientos } from '@/hooks/use-movimientos';
 import { usePendingCount } from '@/hooks/use-pending-count';
 import { useTour } from '@/hooks/use-tour';
@@ -90,6 +91,17 @@ export default function MovimientosPage() {
     setPendientesPage(1);
   }, [negocioId]);
 
+  const [centroCostoId, setCentroCostoId] = useState<number | null>(null);
+  useEffect(() => {
+    setCentroCostoId(null);
+  }, [negocioId]);
+
+  const centrosQuery = useCentrosCosto({
+    negocioId: typeof negocioId === 'number' ? negocioId : null,
+    enabled: typeof negocioId === 'number',
+  });
+  const centrosCosto = centrosQuery.data?.data ?? [];
+
   const pendientesQuery = useMovimientos({
     negocioId: typeof negocioId === 'number' ? negocioId : undefined,
     estado: 'PENDIENTE',
@@ -143,10 +155,11 @@ export default function MovimientosPage() {
       tipo: tipoFilter === 'all' ? undefined : (tipoFilter as TipoMovimiento),
       fechaDesde: historyRange.fechaDesde,
       fechaHasta: historyRange.fechaHasta,
+      centroCostoId,
       page: 1,
       limit: 20,
     };
-  }, [estadoTab, historyRange.fechaDesde, historyRange.fechaHasta, negocioId, tipoFilter]);
+  }, [centroCostoId, estadoTab, historyRange.fechaDesde, historyRange.fechaHasta, negocioId, tipoFilter]);
 
   if (isLoading) {
     return (
@@ -349,6 +362,42 @@ export default function MovimientosPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {centrosCosto.length > 0 ? (
+                    <div className="w-full md:w-[240px]">
+                      <Select value={centroCostoId ? String(centroCostoId) : ''} onValueChange={(v) => setCentroCostoId(v ? Number(v) : null)}>
+                        <SelectTrigger className="bg-background border-border w-[200px]">
+                          <SelectValue placeholder="División / Sub-división" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Todas las divisiones</SelectItem>
+                          {centrosCosto
+                            .filter((c) => c.tipo === 'DIVISION')
+                            .map((div) => (
+                              <React.Fragment key={div.id}>
+                                <SelectItem value={String(div.id)} className="font-medium">
+                                  {div.nombre}
+                                </SelectItem>
+                                {centrosCosto
+                                  .filter((c) => c.padreId === div.id)
+                                  .map((sub) => (
+                                    <SelectItem key={sub.id} value={String(sub.id)} className="pl-6 text-muted-foreground">
+                                      ↳ {sub.nombre}
+                                    </SelectItem>
+                                  ))}
+                              </React.Fragment>
+                            ))}
+                          {centrosCosto
+                            .filter((c) => c.tipo === 'SUBDIVISION' && !c.padreId)
+                            .map((c) => (
+                              <SelectItem key={c.id} value={String(c.id)}>
+                                {c.nombre}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
 
                   {periodPreset === 'custom' ? (
                     <div className="flex flex-col gap-2 sm:flex-row">

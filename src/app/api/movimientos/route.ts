@@ -35,6 +35,7 @@ const listQuerySchema = z.object({
   fechaDesde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD').optional(),
   fechaHasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato YYYY-MM-DD').optional(),
   cuentaBancoId: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().positive().optional()),
+  centroCostoId: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().int().positive().optional()),
   page: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().int().positive().optional()),
   limit: z.preprocess((v) => (v === undefined ? undefined : Number(v)), z.number().int().positive().optional()),
 });
@@ -103,6 +104,7 @@ export async function GET(request: Request) {
       fechaDesde: searchParams.get('fechaDesde') ?? undefined,
       fechaHasta: searchParams.get('fechaHasta') ?? undefined,
       cuentaBancoId: searchParams.get('cuentaBancoId') ?? undefined,
+      centroCostoId: searchParams.get('centroCostoId') ?? undefined,
       page: searchParams.get('page') ?? undefined,
       limit: searchParams.get('limit') ?? undefined,
     });
@@ -133,6 +135,7 @@ export async function GET(request: Request) {
       fechaDesde: parsed.fechaDesde,
       fechaHasta: parsed.fechaHasta,
       cuentaBancoId: parsed.cuentaBancoId,
+      centroCostoId: parsed.centroCostoId ?? null,
       page: parsed.page,
       limit: parsed.limit,
       creadoPorId: auth.user!.rol === 'Externo' ? auth.user!.userId : undefined,

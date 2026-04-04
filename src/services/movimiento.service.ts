@@ -32,6 +32,7 @@ export class MovimientoService {
     fechaDesde?: string;
     fechaHasta?: string;
     cuentaBancoId?: number;
+    centroCostoId?: number | null;
     creadoPorId?: number;
     page?: number;
     limit?: number;
@@ -57,6 +58,9 @@ export class MovimientoService {
     }
     if (filtros.cuentaBancoId) {
       conditions.push(eq(movimientos.cuentaBancoId, filtros.cuentaBancoId));
+    }
+    if (typeof filtros.centroCostoId === 'number') {
+      conditions.push(eq(movimientos.centroCostoId, filtros.centroCostoId));
     }
     if (filtros.creadoPorId) {
       conditions.push(eq(movimientos.creadoPor, filtros.creadoPorId));

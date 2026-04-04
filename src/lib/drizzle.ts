@@ -34,6 +34,9 @@ export const centrosCosto = pgTable('centros_costo', {
   id: serial('id').primaryKey(),
   nombre: varchar('nombre', { length: 255 }).notNull(),
   codigo: varchar('codigo', { length: 50 }),
+  padreId: integer('padre_id'),
+  tipo: varchar('tipo', { length: 20 }).notNull().default('SUBDIVISION'),
+  descripcion: varchar('descripcion', { length: 500 }),
   negocioId: integer('negocio_id').notNull().references(() => negocios.id),
   activo: boolean('activo').default(true),
   createdAt: timestamp('created_at').defaultNow(),
@@ -41,15 +44,29 @@ export const centrosCosto = pgTable('centros_costo', {
 }, (table) => {
   return {
     negocioIdIdx: index('idx_centros_costo_negocio_id').on(table.negocioId),
+    padreIdIdx: index('idx_centros_costo_padre_id').on(table.padreId),
+    padreIdFk: foreignKey({
+      columns: [table.padreId],
+      foreignColumns: [table.id],
+    }),
   };
 });
 
-export const centrosCostoRelations = relations(centrosCosto, ({ one }) => ({
-  negocio: one(negocios, {
-    fields: [centrosCosto.negocioId],
-    references: [negocios.id],
-  }),
-}));
+export const centrosCostoRelations = relations(
+  centrosCosto,
+  ({ one, many }) => ({
+    negocio: one(negocios, {
+      fields: [centrosCosto.negocioId],
+      references: [negocios.id],
+    }),
+    padre: one(centrosCosto, {
+      fields: [centrosCosto.padreId],
+      references: [centrosCosto.id],
+      relationName: 'centro_padre',
+    }),
+    hijos: many(centrosCosto, { relationName: 'centro_padre' }),
+  })
+);
 
 // ==========================================
 // ROLES

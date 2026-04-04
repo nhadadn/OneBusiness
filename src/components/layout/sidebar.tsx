@@ -12,6 +12,7 @@ import {
   FileText,
   Landmark,
   Layers,
+  Layers2,
   LayoutDashboard,
   LogOut,
   Tags,
@@ -206,6 +207,7 @@ export function buildNavSections(userRole?: string): NavSection[] {
       items: [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Negocios', href: '/negocios', icon: Building2 },
+        { label: 'Divisiones', href: '/divisiones', icon: Layers2 },
         { label: 'Consolidado', href: '/consolidado', icon: Layers, show: canSeeConsolidado },
         { label: 'Reportes', href: '/reportes', icon: FileText },
       ],

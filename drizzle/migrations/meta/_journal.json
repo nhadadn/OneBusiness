@@ -92,6 +92,13 @@
       "when": 1774934126360,
       "tag": "0012_uneven_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1775293475310,
+      "tag": "0013_lumpy_squirrel_girl",
+      "breakpoints": true
     }
   ]
 }
