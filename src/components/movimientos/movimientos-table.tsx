@@ -447,7 +447,12 @@ export function MovimientosTable({ filters, search, onAprobar, onRechazar }: Mov
                           <X className="h-4 w-4" />
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => router.push(`/movimientos/${mov.id}`)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => router.push(`/movimientos/${mov.id}`)}
+                        aria-label="Ver detalle del movimiento"
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       {canManage && (
