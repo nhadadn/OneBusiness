@@ -1,18 +1,22 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/use-auth';
 import { useMovimientoPendientesCount, type MovimientosFilters } from '@/hooks/use-movimientos';
+import type { CentroCostoListItem } from '@/types/centro_costo.types';
 import type { EstadoMovimiento, TipoMovimiento } from '@/types/movimiento.types';
 
 export type MovimientosFiltersProps = {
   filters: MovimientosFilters;
   onChange: (filters: MovimientosFilters) => void;
   negocioOptions: { id: number; label: string }[];
+  centrosCosto?: CentroCostoListItem[];
+  centroCostoId?: number | null;
+  onCentroCostoChange?: (id: number | null) => void;
 };
 
 function formatTabLabel(label: string, count: number | null) {
@@ -27,7 +31,14 @@ function getDefaultRange() {
   return { fechaDesde: toIso(start), fechaHasta: toIso(now) };
 }
 
-export function MovimientosFilters({ filters, onChange, negocioOptions }: MovimientosFiltersProps) {
+export function MovimientosFilters({
+  filters,
+  onChange,
+  negocioOptions,
+  centrosCosto,
+  centroCostoId,
+  onCentroCostoChange,
+}: MovimientosFiltersProps) {
   const { user } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const pendientesQuery = useMovimientoPendientesCount();
@@ -75,6 +86,7 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
       fechaDesde: range.fechaDesde,
       fechaHasta: range.fechaHasta,
       cuentaBancoId: undefined,
+      centroCostoId: null,
       page: 1,
       limit: 50,
     });
@@ -140,6 +152,43 @@ export function MovimientosFilters({ filters, onChange, negocioOptions }: Movimi
                 </SelectContent>
               </Select>
             </div>
+
+            {centrosCosto && centrosCosto.length > 0 && onCentroCostoChange ? (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-foreground">División</div>
+                <Select value={centroCostoId ? String(centroCostoId) : ''} onValueChange={(v) => onCentroCostoChange(v ? Number(v) : null)}>
+                  <SelectTrigger className="bg-background border-border w-[200px]">
+                    <SelectValue placeholder="División / Sub-división" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas las divisiones</SelectItem>
+                    {centrosCosto
+                      .filter((c) => c.tipo === 'DIVISION')
+                      .map((div) => (
+                        <React.Fragment key={div.id}>
+                          <SelectItem value={String(div.id)} className="font-medium">
+                            {div.nombre}
+                          </SelectItem>
+                          {centrosCosto
+                            .filter((c) => c.padreId === div.id)
+                            .map((sub) => (
+                              <SelectItem key={sub.id} value={String(sub.id)} className="pl-6 text-muted-foreground">
+                                ↳ {sub.nombre}
+                              </SelectItem>
+                            ))}
+                        </React.Fragment>
+                      ))}
+                    {centrosCosto
+                      .filter((c) => c.tipo === 'SUBDIVISION' && !c.padreId)
+                      .map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nombre}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <label htmlFor="movimientos-fecha-desde" className="text-sm font-medium text-foreground">
